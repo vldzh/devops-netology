@@ -1,9 +1,11 @@
 1.Зарегистрируйте аккаунт на https://github.com/ (если вы предпочитаете другое хранилище для репозитория, можно использовать его).
+
 DONE
 
 2.Создайте публичный репозиторий, который будете использовать дальше на протяжении всего курса, желательное название devops-netology. Обязательно поставьте галочку Initialize this repository with a README. DONE
 
-3.Склонируйте репозиторий, используя https протокол (git clone ...) 
+3.Склонируйте репозиторий, используя https протокол (git clone ...)
+
 root@ovpn1:~# sudo git clone https://github.com/vldzh/devops-netology.git
 Cloning into 'devops-netology'...
 remote: Enumerating objects: 9, done.
