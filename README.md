@@ -1,139 +1,107 @@
-1. Установите средство виртуализации Oracle VirtualBox.
-```
-DONE. Version 6.1.26 r145957 (Qt5.6.2) installed
-```
-2. Установите средство автоматизации Hashicorp Vagrant.
-
-```
-c:\vagrant>vagrant  -v
-Vagrant 2.2.18
-```
 
 
-3. В вашем основном окружении подготовьте удобный для дальнейшей работы терминал. 
-```
-DONE
-```
-4. С помощью базового файла конфигурации запустите Ubuntu 20.04 в VirtualBox посредством Vagrant:
+В виде результата напишите текстом ответы на вопросы и каким образом эти ответы были получены.
 
-Создайте директорию, в которой будут храниться конфигурационные файлы Vagrant. В ней выполните vagrant init. Замените содержимое Vagrantfile по умолчанию следующим:
+1. Найдите полный хеш и комментарий коммита, хеш которого начинается на aefea.
+```
+aefead2207ef7e2aa5dc81a34aedf0cad4c32545
+"Update CHANGELOG.md"
 
- Vagrant.configure("2") do |config|
- 	config.vm.box = "bento/ubuntu-20.04"
- end
-Выполнение в этой директории vagrant up установит провайдер VirtualBox для Vagrant, скачает необходимый образ и запустит виртуальную машину.
-vagrant suspend выключит виртуальную машину с сохранением ее состояния (т.е., при следующем vagrant up будут запущены все процессы внутри, которые работали на момент вызова suspend), vagrant halt выключит виртуальную машину штатным образом.
-```
-c:\vagrant>vagrant up
-Bringing machine 'default' up with 'virtualbox' provider...
-==> default: Importing base box 'bento/ubuntu-20.04'...
-==> default: Matching MAC address for NAT networking...
-==> default: Checking if box 'bento/ubuntu-20.04' version '202107.28.0' is up to date...
-==> default: Setting the name of the VM: vagrant_default_1628696605423_78348
-==> default: Clearing any previously set network interfaces...
-==> default: Preparing network interfaces based on configuration...
-    default: Adapter 1: nat
-==> default: Forwarding ports...
-    default: 22 (guest) => 2222 (host) (adapter 1)
-==> default: Booting VM...
-==> default: Waiting for machine to boot. This may take a few minutes...
-    default: SSH address: 127.0.0.1:2222
-    default: SSH username: vagrant
-    default: SSH auth method: private key
-    default: Warning: Connection reset. Retrying...
-    default:
-    default: Vagrant insecure key detected. Vagrant will automatically replace
-    default: this with a newly generated keypair for better security.
-    default:
-    default: Inserting generated public key within guest...
-    default: Removing insecure key from the guest if it's present...
-    default: Key inserted! Disconnecting and reconnecting using new SSH key...
-==> default: Machine booted and ready!
-==> default: Checking for guest additions in VM...
-==> default: Mounting shared folders...
-    default: /vagrant => C:/vagrant
-```
-5. Ознакомьтесь с графическим интерфейсом VirtualBox, посмотрите как выглядит виртуальная машина, которую создал для вас Vagrant, какие аппаратные ресурсы ей выделены. Какие ресурсы выделены по-умолчанию?
-```
-vCPUs: 2, RAM: 1Gb
-```
-6. Ознакомьтесь с возможностями конфигурации VirtualBox через Vagrantfile: документация. Как добавить оперативной памяти или ресурсов процессора виртуальной машине?
-```
-изменить файл Vagrantfile
-config.vm.provider "virtualbox" do |v|
-  v.memory = 2048
-  v.cpus = 4
-```
-7. Команда vagrant ssh из директории, в которой содержится Vagrantfile, позволит вам оказаться внутри виртуальной машины без каких-либо дополнительных настроек. Попрактикуйтесь в выполнении обсуждаемых команд в терминале Ubuntu.
-```
-DONE
-```
-8. Ознакомиться с разделами man bash, почитать о настройках самого bash:
-какой переменной можно задать длину журнала history, и на какой строчке manual это описывается?
-что делает директива ignoreboth в bash?
-```
-HISTFILESIZE, line 879/4744
-       HISTFILESIZE
-              The  maximum  number  of  lines  contained in the history file.  When this variable is assigned a
-              value, the history file is truncated, if necessary, to contain no more than that number of  lines
-              by removing the oldest entries.  The history file is also truncated to this size after writing it
-              when a shell exits.  If the value is 0, the history file is truncated to zero size.   Non-numeric
-              values and numeric values less than zero inhibit truncation.  The shell sets the default value to
-              the value of HISTSIZE after reading any startup files.
-
-
-ignoreboth позволяет не сохранять в истории команды, начинающиеся
-с пробела (ignorespace) и полностью совпадающие с сохраненными ранее в истории
-(ignoredupes).
-```
-9. В каких сценариях использования применимы скобки {} и на какой строчке man bash это описано?
-```
-строка 267/4744
-       { list; }
-              list is simply executed in the current shell environment.  list must be terminated with a newline
-              or  semicolon.   This is known as a group command.  The return status is the exit status of list.
-              Note that unlike the metacharacters ( and ), { and } are reserved words and must  occur  where  a
-              reserved  word is permitted to be recognized.  Since they do not cause a word break, they must be
-              separated from list by whitespace or another shell metacharacter.
-```
-10. Основываясь на предыдущем вопросе, как создать однократным вызовом touch 100000 файлов? А получилось ли создать 300000?
-touch 100000 файлов? А получилось ли создать 300000?
-```
-    Получилось создать 100000 файлов.     
-    Создать 300000 файлов не получилось
-    Вызывает сообщение: 
-    -bash: /bin/touch: Argument list too long
-    можно решить проблему, использовавав xargs
-```
-11. В man bash поищите по /\[\[. Что делает конструкция [[ -d /tmp ]]
-```
-конструкция [[ -d /tmp ]] проверяет является ли tmp директорией.
-```
-12. Основываясь на знаниях о просмотре текущих (например, PATH) и установке новых переменных; командах, которые мы рассматривали, добейтесь в выводе type -a bash в виртуальной машине наличия первым пунктом в списке:
-
-bash is /tmp/new_path_directory/bash
-bash is /usr/local/bin/bash
-bash is /bin/bash
-(прочие строки могут отличаться содержимым и порядком)
-```
-$ mkdir -p /tmp/new_path_directory/
-$ touch /tmp/new_path_directory/bash
-$ chmod +x /tmp/new_path_directory/bash
-$ export PATH=/tmp/new_path_directory:$PATH
-$ type -a bash
-bash is /tmp/new_path_directory/bash
-bash is /usr/bin/bash
-bash is /bin/bash
-```
-13. Чем отличается планирование команд с помощью batch и at?
-```
- at запускает команды на выполнение в указанное время, 
- batch  запускает задания в очереди только при снижении нагрузки на систему до  определенного значения 
-```
-14. Завершите работу виртуальной машины чтобы не расходовать ресурсы компьютера и/или батарею ноутбука.
-```
-DONE
+root@ovpn1:~/devops-netology/terraform# git show --pretty=format:"%H -> %s" --no-patch aefea
+aefead2207ef7e2aa5dc81a34aedf0cad4c32545 -> Update CHANGELOG.md
 ```
 
+2. Какому тегу соответствует коммит 85024d3?
+```
+(tag: v0.12.23)
 
+root@ovpn1:~/devops-netology/terraform# git show --pretty=format:"%d" --no-patch 85024d3
+ (tag: v0.12.23)
+```
 
+3. Сколько родителей у коммита b8d720? Напишите их хеши.
+2
+56cd7859e 9ea88f22f
+```
+root@ovpn1:~/devops-netology/terraform# git show b8d720
+commit b8d720f8340221f2146e4e4870bf2ee0bc48f2d5
+Merge: 56cd7859e 9ea88f22f
+Author: Chris Griggs <cgriggs@hashicorp.com>
+Date:   Tue Jan 21 17:45:48 2020 -0800
+
+    Merge pull request #23916 from hashicorp/cgriggs01-stable
+
+    [Cherrypick] community links
+```
+4. Перечислите хеши и комментарии всех коммитов которые были сделаны между тегами v0.12.23 и v0.12.24.
+```
+root@ovpn1:~/devops-netology/terraform# git log --oneline --pretty=format:"%H %s" v0.12.23..v0.12.24
+33ff1c03bb960b332be3af2e333462dde88b279e v0.12.24
+b14b74c4939dcab573326f4e3ee2a62e23e12f89 [Website] vmc provider links
+3f235065b9347a758efadc92295b540ee0a5e26e Update CHANGELOG.md
+6ae64e247b332925b872447e9ce869657281c2bf registry: Fix panic when server is unreachable
+5c619ca1baf2e21a155fcdb4c264cc9e24a2a353 website: Remove links to the getting started guide's old location
+06275647e2b53d97d4f0a19a0fec11f6d69820b5 Update CHANGELOG.md
+d5f9411f5108260320064349b757f55c09bc4b80 command: Fix bug when using terraform login on Windows
+4b6d06cc5dcb78af637bbb19c198faff37a066ed Update CHANGELOG.md
+dd01a35078f040ca984cdd349f18d0b67e486c35 Update CHANGELOG.md
+225466bc3e5f35baa5d07197bbc079345b77525e Cleanup after v0.12.23 release
+```
+5. Найдите коммит в котором была создана функция func providerSource, ее определение в коде выглядит так func providerSource(...) (вместо троеточего перечислены аргументы).
+```
+5af1e6234ab6da412fb8637393c5a17a1b293663
+
+root@ovpn1:~/devops-netology/terraform# git grep -n 'func providerSource('
+provider_source.go:23:func providerSource(configs []*cliconfig.ProviderInstallation, services *disco.Disco) (getproviders.Source, tfdiags.Diagnostics) {
+root@ovpn1:~/devops-netology/terraform#  git log -L:providerSource:provider_source.go --reverse -1                                     
+commit 5af1e6234ab6da412fb8637393c5a17a1b293663
+Author: Martin Atkins <mart@degeneration.co.uk>
+Date:   Tue Apr 21 16:28:59 2020 -0700
+..
+
+```
+6. Найдите все коммиты в которых была изменена функция globalPluginDirs.
+```
+root@ovpn1:~/devops-netology/terraform# git grep -p 'globalPluginDirs'
+commands.go=func initCommands(
+commands.go:            GlobalPluginDirs: globalPluginDirs(),
+commands.go=func credentialsSource(config *cliconfig.Config) (auth.CredentialsSource, error) {
+commands.go:    helperPlugins := pluginDiscovery.FindPlugins("credentials", globalPluginDirs())
+internal/command/cliconfig/config_unix.go=func homeDir() (string, error) {
+internal/command/cliconfig/config_unix.go:              // FIXME: homeDir gets called from globalPluginDirs during init, before
+plugins.go=import (
+plugins.go:// globalPluginDirs returns directories that should be searched for
+plugins.go:func globalPluginDirs() []string {
+
+root@ovpn1:~/devops-netology/terraform#  git log -L:providerSource:provider_source.go --reverse -1                                     
+commit 5af1e6234ab6da412fb8637393c5a17a1b293663
+Author: Martin Atkins <mart@degeneration.co.uk>
+Date:   Tue Apr 21 16:28:59 2020 -0700
+...
+78b122055 Remove config.go and update things using its aliases
+...
+52dbf9483 keep .terraform.d/plugins for discovery
+...
+41ab0aef7 Add missing OS_ARCH dir to global plugin paths
+...
+66ebff90c move some more plugin search path logic to command
+...
+8364383c3 Push plugin discovery down into command package
+...
+```
+7. Кто автор функции synchronizedWriters?
+```
+Martin Atkins
+
+root@ovpn1:~/devops-netology/terraform# git grep -p synchronizedWriters $(git log --pretty=format:"%H" -S "synchronizedWriters")
+fd4f7eb0b935e5a838810564fd549afe710ae19a:synchronized_writers.go=type synchronizedWriter struct {
+fd4f7eb0b935e5a838810564fd549afe710ae19a:synchronized_writers.go:// synchronizedWriters takes a set of writers and returns wrappers that ensure
+fd4f7eb0b935e5a838810564fd549afe710ae19a:synchronized_writers.go:func synchronizedWriters(targets ...io.Writer) []io.Writer {
+5ac311e2a91e381e2f52234668b49ba670aa0fe5:main.go=func copyOutput(r io.Reader, doneCh chan<- struct{}) {
+5ac311e2a91e381e2f52234668b49ba670aa0fe5:main.go:               wrapped := synchronizedWriters(stdout, stderr)
+5ac311e2a91e381e2f52234668b49ba670aa0fe5:synchronized_writers.go=type synchronizedWriter struct {
+5ac311e2a91e381e2f52234668b49ba670aa0fe5:synchronized_writers.go:// synchronizedWriters takes a set of writers and returns wrappers that ensure
+5ac311e2a91e381e2f52234668b49ba670aa0fe5:synchronized_writers.go:func synchronizedWriters(targets ...io.Writer) []io.Writer {
+root@ovpn1:~/devops-netology/terraform# git show --no-patch --pretty=format:"%an" 5ac311e2a91e381e2f52234668b49ba670aa0fe5
+Martin Atkins
+```
