@@ -1,160 +1,194 @@
 
 
-1. Какой системный вызов делает команда cd? В прошлом ДЗ мы выяснили, что cd не является самостоятельной программой, это shell builtin, поэтому запустить strace непосредственно на cd не получится. Тем не менее, вы можете запустить strace на /bin/bash -c 'cd /tmp'. В этом случае вы увидите полный список системных вызовов, которые делает сам bash при старте. Вам нужно найти тот единственный, который относится именно к cd.
-```
-chdir("/tmp")
+1.На лекции мы познакомились с node_exporter. В демонстрации его исполняемый файл запускался в background. Этого достаточно для демо, но не для настоящей production-системы, где процессы должны находиться под внешним управлением. Используя знания из лекции по systemd, создайте самостоятельно простой unit-файл для node_exporter:
 
-root@ovpn1:~# strace /bin/bash -c 'cd /tmp' 
+поместите его в автозагрузку,
+предусмотрите возможность добавления опций к запускаемому процессу через внешний файл (посмотрите, например, на systemctl cat cron),
+удостоверьтесь, что с помощью systemctl процесс корректно стартует, завершается, а после перезагрузки автоматически поднимается.
+```
+vagrant@vagrant:~$ sudo wget https://github.com/prometheus/node_exporter/releases/download/v1.2.2/node_exporter-1.2.2.linux-amd64.tar.gz
 ...
-chdir("/tmp")
+node_exporter-1.2.2.linux-amd64.tar.gz      100%[=========================================================================================>]   8.49M  6.93MB/s    in 1.2s
 ...
+2021-08-24 11:47:28 (6.93 MB/s) - ‘node_exporter-1.2.2.linux-amd64.tar.gz’ saved [8898481/8898481]
+vagrant@vagrant:~$ tar xvfz node_exporter-1.2.2.linux-amd64.tar.gz
+node_exporter-1.2.2.linux-amd64/
+node_exporter-1.2.2.linux-amd64/LICENSE
+node_exporter-1.2.2.linux-amd64/NOTICE
+node_exporter-1.2.2.linux-amd64/node_exporter
+vagrant@vagrant:~$ sudo cp node_exporter-1.2.2.linux-amd64/node_exporter  /usr/sbin
+vagrant@vagrant:~$  sudo useradd node_exporter -s /sbin/nologin
+vagrant@vagrant:~$  sudo chown node_exporter:node_exporter /usr/sbin/node_exporter
 ```
-2. Попробуйте использовать команду file на объекты разных типов на файловой системе. Например:
-vagrant@netology1:~$ file /dev/tty
-/dev/tty: character special (5/0)
-vagrant@netology1:~$ file /dev/sda
-/dev/sda: block special (8/0)
-vagrant@netology1:~$ file /bin/bash
-/bin/bash: ELF 64-bit LSB shared object, x86-64
-Используя strace выясните, где находится база данных file на основании которой она делает свои догадки.
+Unit-файл для node_exporter:
 ```
-база данных file  /usr/lib/file/magic.mgc
+vagrant@vagrant:~$ cat  /etc/systemd/system/node_exporter.servicerter.service
+[Unit]
+Description=Node exporter
+After=network.target
 
-root@ovpn1:~# strace file /dev/sda
-...
-stat("/etc/magic", {st_mode=S_IFREG|0644, st_size=111, ...}) = 0
-openat(AT_FDCWD, "/etc/magic", O_RDONLY) = 3
-openat(AT_FDCWD, "/usr/share/misc/magic.mgc", O_RDONLY) = 3
-...
-...
-root@ovpn1:~#  ls -la  /usr/share/misc/ | grep magic.mgc
-lrwxrwxrwx   1 root root      24 May 12  2020 magic.mgc -> ../../lib/file/magic.mgc
-...
+[Service]
+User=node_exporter
+Group=node_exporter
+Type=simple
+EnvironmentFile=-/etc/default/node_exporter
+ExecStart=/usr/bin/node_exporter $OPTIONS
+
+[Install]
+WantedBy=multi-user.target
 ```
-
-3. Предположим, приложение пишет лог в текстовый файл. Этот файл оказался удален (deleted в lsof), однако возможности сигналом сказать приложению переоткрыть файлы или просто перезапустить приложение – нет. Так как приложение продолжает писать в удаленный файл, место на диске постепенно заканчивается. Основываясь на знаниях о перенаправлении потоков предложите способ обнуления открытого удаленного файла (чтобы освободить место на файловой системе).
+поместим его в автозагрузку,
+systemctl процесс корректно стартует, завершается, а после перезагрузки автоматически поднимается
 ```
--Найти процесс, уторый пишет в файл
-$lsof | egrep "deleted|COMMAND"
-COMMAND       PID    TID TASKCMD     USER   FD  TYPE  DEVICE    SIZE/OFF      NODE NAME
-ora         25575   8194 oracle    oracle   33   REG   65,65  4294983680  31014933 /oradata/DATAPRE/file.dbf (deleted)
+vagrant@vagrant:~$ sudo systemctl enable node_exporter.service
+Created symlink /etc/systemd/system/multi-user.target.wants/node_exporter.service → /etc/systemd/system/node_exporter.service.
+vagrant@vagrant:~$  sudo systemctl start node_exporter.service
+vagrant@vagrant:~$ sudo systemctl status node_exporter.service
+● node_exporter.service - Node exporter
+     Loaded: loaded (/etc/systemd/system/node_exporter.service; enabled; vendor preset: enabled)
+     Active: active (running) since Tue 2021-08-24 11:56:50 UTC; 5s ago
+   Main PID: 1687 (node_exporter)
+      Tasks: 5 (limit: 1071)
+     Memory: 2.2M
+     CGroup: /system.slice/node_exporter.service
+             └─1687 /usr/sbin/node_exporter
 
--Очистить содержимое удаленного файла через файловый дескриптор
+Aug 24 11:56:50 vagrant node_exporter[1687]: level=info ts=2021-08-24T11:56:50.326Z caller=node_exporter.go:115 collector=thermal_zone
+Aug 24 11:56:50 vagrant node_exporter[1687]: level=info ts=2021-08-24T11:56:50.326Z caller=node_exporter.go:115 collector=time
+Aug 24 11:56:50 vagrant node_exporter[1687]: level=info ts=2021-08-24T11:56:50.326Z caller=node_exporter.go:115 collector=timex
+Aug 24 11:56:50 vagrant node_exporter[1687]: level=info ts=2021-08-24T11:56:50.327Z caller=node_exporter.go:115 collector=udp_queues
+Aug 24 11:56:50 vagrant node_exporter[1687]: level=info ts=2021-08-24T11:56:50.327Z caller=node_exporter.go:115 collector=uname
+Aug 24 11:56:50 vagrant node_exporter[1687]: level=info ts=2021-08-24T11:56:50.327Z caller=node_exporter.go:115 collector=vmstat
+Aug 24 11:56:50 vagrant node_exporter[1687]: level=info ts=2021-08-24T11:56:50.327Z caller=node_exporter.go:115 collector=xfs
+Aug 24 11:56:50 vagrant node_exporter[1687]: level=info ts=2021-08-24T11:56:50.327Z caller=node_exporter.go:115 collector=zfs
+Aug 24 11:56:50 vagrant node_exporter[1687]: level=info ts=2021-08-24T11:56:50.327Z caller=node_exporter.go:199 msg="Listening on" address=:9100
+Aug 24 11:56:50 vagrant node_exporter[1687]: level=info ts=2021-08-24T11:56:50.328Z caller=tls_config.go:191 msg="TLS is disabled." http2=false
+vagrant@vagrant:~$ sudo systemctl stop node_exporter.service
+vagrant@vagrant:~$ sudo systemctl status node_exporter.service
+● node_exporter.service - Node exporter
+     Loaded: loaded (/etc/systemd/system/node_exporter.service; enabled; vendor preset: enabled)
+     Active: inactive (dead) since Tue 2021-08-24 11:58:08 UTC; 1s ago
+    Process: 1687 ExecStart=/usr/sbin/node_exporter $OPTIONS (code=killed, signal=TERM)
+   Main PID: 1687 (code=killed, signal=TERM)
 
-$ file /proc/25575/fd/33
-/proc/25575/fd/33: broken symbolic link to `/oradata/DATAPRE/file.dbf (deleted)'
-$ echo > /proc/25575/fd/33
+Aug 24 11:56:50 vagrant node_exporter[1687]: level=info ts=2021-08-24T11:56:50.327Z caller=node_exporter.go:115 collector=udp_queues
+Aug 24 11:56:50 vagrant node_exporter[1687]: level=info ts=2021-08-24T11:56:50.327Z caller=node_exporter.go:115 collector=uname
+Aug 24 11:56:50 vagrant node_exporter[1687]: level=info ts=2021-08-24T11:56:50.327Z caller=node_exporter.go:115 collector=vmstat
+Aug 24 11:56:50 vagrant node_exporter[1687]: level=info ts=2021-08-24T11:56:50.327Z caller=node_exporter.go:115 collector=xfs
+Aug 24 11:56:50 vagrant node_exporter[1687]: level=info ts=2021-08-24T11:56:50.327Z caller=node_exporter.go:115 collector=zfs
+Aug 24 11:56:50 vagrant node_exporter[1687]: level=info ts=2021-08-24T11:56:50.327Z caller=node_exporter.go:199 msg="Listening on" address=:9100
+Aug 24 11:56:50 vagrant node_exporter[1687]: level=info ts=2021-08-24T11:56:50.328Z caller=tls_config.go:191 msg="TLS is disabled." http2=false
+Aug 24 11:58:08 vagrant systemd[1]: Stopping Node exporter...
+Aug 24 11:58:08 vagrant systemd[1]: node_exporter.service: Succeeded.
+Aug 24 11:58:08 vagrant systemd[1]: Stopped Node exporter.
+vagrant@vagrant:~$ sudo systemctl start node_exporter.service
+vagrant@vagrant:~$ sudo systemctl status node_exporter.service
+● node_exporter.service - Node exporter
+     Loaded: loaded (/etc/systemd/system/node_exporter.service; enabled; vendor preset: enabled)
+     Active: active (running) since Tue 2021-08-24 11:58:15 UTC; 1s ago
+   Main PID: 1726 (node_exporter)
+      Tasks: 4 (limit: 1071)
+     Memory: 2.4M
+     CGroup: /system.slice/node_exporter.service
+             └─1726 /usr/sbin/node_exporter
 
-```
+Aug 24 11:58:15 vagrant node_exporter[1726]: level=info ts=2021-08-24T11:58:15.713Z caller=node_exporter.go:115 collector=thermal_zone
+Aug 24 11:58:15 vagrant node_exporter[1726]: level=info ts=2021-08-24T11:58:15.713Z caller=node_exporter.go:115 collector=time
+Aug 24 11:58:15 vagrant node_exporter[1726]: level=info ts=2021-08-24T11:58:15.713Z caller=node_exporter.go:115 collector=timex
+Aug 24 11:58:15 vagrant node_exporter[1726]: level=info ts=2021-08-24T11:58:15.713Z caller=node_exporter.go:115 collector=udp_queues
+Aug 24 11:58:15 vagrant node_exporter[1726]: level=info ts=2021-08-24T11:58:15.713Z caller=node_exporter.go:115 collector=uname
+Aug 24 11:58:15 vagrant node_exporter[1726]: level=info ts=2021-08-24T11:58:15.713Z caller=node_exporter.go:115 collector=vmstat
+Aug 24 11:58:15 vagrant node_exporter[1726]: level=info ts=2021-08-24T11:58:15.713Z caller=node_exporter.go:115 collector=xfs
+Aug 24 11:58:15 vagrant node_exporter[1726]: level=info ts=2021-08-24T11:58:15.713Z caller=node_exporter.go:115 collector=zfs
+Aug 24 11:58:15 vagrant node_exporter[1726]: level=info ts=2021-08-24T11:58:15.714Z caller=node_exporter.go:199 msg="Listening on" address=:9100
+Aug 24 11:58:15 vagrant node_exporter[1726]: level=info ts=2021-08-24T11:58:15.714Z caller=tls_config.go:191 msg="TLS is disabled." http2=false
 
-4. Занимают ли зомби-процессы какие-то ресурсы в ОС (CPU, RAM, IO)?
-```
-Процессы зомби (также показанные как <defunct>), вообще не являются реальными процессами. Это просто записи в таблице процессов ядра. Это единственный ресурс, который они потребляют. Они не потребляют ни CPU, ни RAM. Единственная опасность наличия зомби - это нехватка места в таблице процессов (можно использовать, cat /proc/sys/kernel/threads-max, чтобы узнать, сколько записей разрешено в вашей системе).
-```
-
-5. В iovisor BCC есть утилита opensnoop:
-root@vagrant:~# dpkg -L bpfcc-tools | grep sbin/opensnoop
-/usr/sbin/opensnoop-bpfcc
-На какие файлы вы увидели вызовы группы open за первую секунду работы утилиты? Воспользуйтесь пакетом bpfcc-tools для Ubuntu 20.04. Дополнительные сведения по установке.
-```
-vagrant@vagrant:~$ strace  -e openat opensnoop-bpfcc > out.txt 2>&1
-vagrant@vagrant:~$ more out.txt
-openat(AT_FDCWD, "/etc/ld.so.cache", O_RDONLY|O_CLOEXEC) = 3
-openat(AT_FDCWD, "/lib/x86_64-linux-gnu/libc.so.6", O_RDONLY|O_CLOEXEC) = 3
-openat(AT_FDCWD, "/lib/x86_64-linux-gnu/libpthread.so.0", O_RDONLY|O_CLOEXEC) = 3
-openat(AT_FDCWD, "/lib/x86_64-linux-gnu/libdl.so.2", O_RDONLY|O_CLOEXEC) = 3
-openat(AT_FDCWD, "/lib/x86_64-linux-gnu/libutil.so.1", O_RDONLY|O_CLOEXEC) = 3
-openat(AT_FDCWD, "/lib/x86_64-linux-gnu/libm.so.6", O_RDONLY|O_CLOEXEC) = 3
-openat(AT_FDCWD, "/lib/x86_64-linux-gnu/libexpat.so.1", O_RDONLY|O_CLOEXEC) = 3
-openat(AT_FDCWD, "/lib/x86_64-linux-gnu/libz.so.1", O_RDONLY|O_CLOEXEC) = 3
-openat(AT_FDCWD, "/usr/lib/locale/locale-archive", O_RDONLY|O_CLOEXEC) = 3
-openat(AT_FDCWD, "/usr/lib/x86_64-linux-gnu/gconv/gconv-modules.cache", O_RDONLY) = 3
-openat(AT_FDCWD, "/usr/bin/pyvenv.cfg", O_RDONLY) = -1 ENOENT (No such file or directory)
-openat(AT_FDCWD, "/usr/pyvenv.cfg", O_RDONLY) = -1 ENOENT (No such file or directory)
-openat(AT_FDCWD, "/etc/localtime", O_RDONLY|O_CLOEXEC) = 3
-openat(AT_FDCWD, "/usr/lib/python3.8", O_RDONLY|O_NONBLOCK|O_CLOEXEC|O_DIRECTORY) = 3
-openat(AT_FDCWD, "/usr/lib/python3.8/encodings/__pycache__/__init__.cpython-38.pyc", O_RDONLY|O_CLOEXEC) = 3
-openat(AT_FDCWD, "/usr/lib/python3.8/__pycache__/codecs.cpython-38.pyc", O_RDONLY|O_CLOEXEC) = 3
-openat(AT_FDCWD, "/usr/lib/python3.8/encodings", O_RDONLY|O_NONBLOCK|O_CLOEXEC|O_DIRECTORY) = 3
-openat(AT_FDCWD, "/usr/lib/python3.8/encodings/__pycache__/aliases.cpython-38.pyc", O_RDONLY|O_CLOEXEC) = 3
-openat(AT_FDCWD, "/usr/lib/python3.8/encodings/__pycache__/utf_8.cpython-38.pyc", O_RDONLY|O_CLOEXEC) = 3
-openat(AT_FDCWD, "/usr/lib/python3.8/encodings/__pycache__/latin_1.cpython-38.pyc", O_RDONLY|O_CLOEXEC) = 3
-openat(AT_FDCWD, "/usr/lib/python3.8/__pycache__/io.cpython-38.pyc", O_RDONLY|O_CLOEXEC) = 3
-openat(AT_FDCWD, "/usr/lib/python3.8/__pycache__/abc.cpython-38.pyc", O_RDONLY|O_CLOEXEC) = 3
-openat(AT_FDCWD, "/usr/lib/python3.8/__pycache__/site.cpython-38.pyc", O_RDONLY|O_CLOEXEC) = 3
-openat(AT_FDCWD, "/usr/lib/python3.8/__pycache__/os.cpython-38.pyc", O_RDONLY|O_CLOEXEC) = 3
-openat(AT_FDCWD, "/usr/lib/python3.8/__pycache__/stat.cpython-38.pyc", O_RDONLY|O_CLOEXEC) = 3
-openat(AT_FDCWD, "/usr/lib/python3.8/__pycache__/_collections_abc.cpython-38.pyc", O_RDONLY|O_CLOEXEC) = 3
-openat(AT_FDCWD, "/usr/lib/python3.8/__pycache__/posixpath.cpython-38.pyc", O_RDONLY|O_CLOEXEC) = 3
-openat(AT_FDCWD, "/usr/lib/python3.8/__pycache__/genericpath.cpython-38.pyc", O_RDONLY|O_CLOEXEC) = 3
-openat(AT_FDCWD, "/usr/lib/python3.8/__pycache__/_sitebuiltins.cpython-38.pyc", O_RDONLY|O_CLOEXEC) = 3
-```
-
-6. Какой системный вызов использует uname -a? Приведите цитату из man по этому системному вызову, где описывается альтернативное местоположение в /proc, где можно узнать версию ядра и релиз ОС.
-```
-uname({sysname="Linux", nodename="ovpn1", ...}) = 0
-uname({sysname="Linux", nodename="ovpn1", ...}) = 0
-write(1, "Linux ovpn1 4.15.0-112-generic #"..., 106Linux ovpn1 4.15.0-112-generic #113-Ubuntu SMP Thu Jul 9 23:41:39 UTC 2020 x86_64 x86_64 x86_64 GNU/Linux
-
-root@ovpn1:~# man uname  | grep /proc
-root@ovpn1:~# man 2  uname  | grep /proc
-       Part of the utsname information is also accessible via /proc/sys/kernel/{ostype, hostname, osrelease,  version,  domain
-```
-
-7. Чем отличается последовательность команд через ; и через && в bash? Например:
-root@netology1:~# test -d /tmp/some_dir; echo Hi
-Hi
-root@netology1:~# test -d /tmp/some_dir && echo Hi
-root@netology1:~#
-Есть ли смысл использовать в bash &&, если применить set -e?
-```
-command1 && command2
-Команда2 выполняется тогда и только тогда, когда command1 возвращается нулевое состояние выхода ( true ). Другими словами, запустите command1 и, если это успешно, то запустите command 2.
-
-command1 ; command2
-Обе команды command1 и command2 будут выполняться независимо. Точка с запятой позволяет вводить много команд в одной строке.
-
-set -e(errexit) означени прекращение выполнения ВСЕХ дальнейших команд и немедленный выход со скрипта, если текущая команда выполнилась с кодом выхода отличным от нуля. 
 ```
 
-8. Из каких опций состоит режим bash set -euxo pipefail и почему его хорошо было бы использовать в сценариях?
+2. Ознакомьтесь с опциями node_exporter и выводом /metrics по-умолчанию. Приведите несколько опций, которые вы бы выбрали для базового мониторинга хоста по CPU, памяти, диску и сети.
 ```
-set -e
-Указав параметр -e скрипт немедленно завершит работу, если любая команда выйдет с ошибкой. По-умолчанию, игнорируются любые неудачи и сценарий продолжет выполнятся.
-
-
-set -o pipefail
-Но -e не идеален. Bash возвращает только код ошибки последней команды в пайпе (конвейере). И параметр -e проверяет только его. Если нужно убедиться, что все команды в пайпах завершились успешно, нужно использовать -o pipefail.
-
-set -u
-Наверно самый полезный параметр - -u. Благодаря ему оболочка проверяет инициализацию переменных в скрипте. Если переменной не будет, скрипт немедленно завершиться. 
-
-set -x
-Параметр -x очень полезен при отладке. С помощью него bash печатает в стандартный вывод все команды перед их исполнением. Стоит учитывать, что все переменные будут уже доставлены, и с этим нужно быть аккуратнее, к примеру если используете пароли.
+rate(node_cpu_seconds_total{mode="system"}[1m])	The average amount of CPU time spent in system mode, per second, over the last minute (in seconds)
+go_memstats_alloc_bytes Number of bytes allocated and still in use.
+node_filesystem_avail_bytes			The filesystem space available to non-root users (in bytes)
+rate(node_network_receive_bytes_total[1m])	The average network traffic received, per second, over the last minute (in bytes)
 ```
 
-9. Используя -o stat для ps, определите, какой наиболее часто встречающийся статус у процессов в системе. В man ps ознакомьтесь (/PROCESS STATE CODES) что значат дополнительные к основной заглавной буквы статуса процессов. Его можно не учитывать при расчете (считать S, Ss или Ssl равнозначными).
-```
-root@ovpn1:~# ps -ax -o stat | sort | uniq -c | sort -rn
-     68 I<
-     59 S
-     18 Ss
-     10 Ssl
-      6 I
-      5 S+
-      2 SN
-      1 STAT
-      1 S<sl
-      1 S<s
-      1 R+
 
-R - Процесс выполняется в данный момент
-S - Процесс ожидает выполнение (спит)
-D - Процесс в полной (непрерываемой) спячке, например, ожидает ввода/вывода
-Z - zombie или defunct процесс, т.е. процесс у которого нет родителя.
-T - Процесс остановлен.
-W - процесс в свопе
-< - процесс в приоритетном режиме.
-N - процесс в режиме низкого приоритета
-L - real-time процесс, имеются страницы заблокированные в памяти.
+3.Установите в свою виртуальную машину Netdata. Воспользуйтесь готовыми пакетами для установки (sudo apt install -y netdata). После успешной установки:
+
+в конфигурационном файле /etc/netdata/netdata.conf в секции [web] замените значение с localhost на bind to = 0.0.0.0,
+добавьте в Vagrantfile проброс порта Netdata на свой локальный компьютер и сделайте vagrant reload:
+config.vm.network "forwarded_port", guest: 19999, host: 19999
+После успешной перезагрузки в браузере на своем ПК (не в виртуальной машине) вы должны суметь зайти на localhost:19999. Ознакомьтесь с метриками, которые по умолчанию собираются Netdata и с комментариями, которые даны к этим метрикам.
+```
+[global]
+        run as user = netdata
+        web files owner = root
+        web files group = root
+        # Netdata is not designed to be exposed to potentially hostile
+        # networks. See https://github.com/netdata/netdata/issues/164
+        bind socket to IP = 0.0.0.0
+
+дешборд с етриками заработал на localhost:19999
+
+```
+
+4. Можно ли по выводу dmesg понять, осознает ли ОС, что загружена не на настоящем оборудовании, а на системе виртуализации?
+```
+Можно, например,
+Vmware VSphere:
+root@ovpn1:~# dmesg  | grep Virtual
+[    0.000000] DMI: VMware, Inc. VMware Virtual Platform/440BX Desktop Reference Platform, BIOS 6.00 07/03/2018
+root@ovpn1:~# dmesg  | grep Hyper
+[    0.000000] Hypervisor detected: VMware
+
+Oracle VirtualBox:
+[    0.000000] DMI: innotek GmbH VirtualBox/VirtualBox, BIOS VirtualBox 12/01/2006
+[    0.000000] Hypervisor detected: KVM
+```
+
+5. Как настроен sysctl fs.nr_open на системе по-умолчанию? Узнайте, что означает этот параметр. Какой другой существующий лимит не позволит достичь такого числа (ulimit --help)?
+```
+root@ovpn1:~# sysctl fs.nr_open
+fs.nr_open = 1048576
+
+fs.nr_open
+
+This denotes the maximum number of file-handles a process can
+allocate. Default value is 1024*1024 (1048576) which should be
+enough for most machines. Actual limit depends on RLIMIT_NOFILE
+resource limit.
+
+
+root@ovpn1:~# ulimit -n
+1024
+```
+
+6. Запустите любой долгоживущий процесс (не ls, который отработает мгновенно, а, например, sleep 1h) в отдельном неймспейсе процессов; покажите, что ваш процесс работает под PID 1 через nsenter. Для простоты работайте в данном задании под root (sudo -i). Под обычным пользователем требуются дополнительные опции (--map-root-user) и т.д.
+```
+root@ovpn1:~# ps -a | grep sleep
+28268 pts/1    00:00:00 sleep
+root@ovpn1:~# nsenter --target 28268 --pid --mount
+root@ovpn1:/# ps -aux
+USER       PID %CPU %MEM    VSZ   RSS TTY      STAT START   TIME COMMAND
+root         1  0.0  0.0   6288   832 pts/1    S+   21:17   0:00 sleep 1h
+root         2  0.1  0.5  21508  5076 pts/3    S    21:22   0:00 -bash
+root        17  0.0  0.3  38456  3576 pts/3    R+   21:22   0:00 ps -aux
+```
+
+
+
+7. Найдите информацию о том, что такое :(){ :|:& };:. Запустите эту команду в своей виртуальной машине Vagrant с Ubuntu 20.04 (это важно, поведение в других ОС не проверялось). Некоторое время все будет "плохо", после чего (минуты) – ОС должна стабилизироваться. Вызов dmesg расскажет, какой механизм помог автоматической стабилизации. Как настроен этот механизм по-умолчанию, и как изменить число процессов, которое можно создать в сессии?
+```
+:(){ :|:& };: определяет функцию под названием":", которая вызывает себя дважды при каждом вызове и не имеет возможности завершить себя.
+Это fork-бомба — вредоносная или ошибочно написанная программа, бесконечно создающая свои копии (системным вызовом fork()), которые обычно также начинают создавать свои копии и т. д. Выполнение такой программы может вызывать большую нагрузку вычислительной системы или даже отказ в обслуживании вследствие нехватки системных ресурсов
+
+dmesg
+[57976.496440] cgroup: fork rejected by pids controller in /user.slice/user-1000.slice/session-3.scope
+
+настройка механизма стабилизации производится в файле /usr/lib/systemd/system/user-.slice.d/10-defaults.conf,
+например, ожно поменять 
+TasksMax=33%
+на 
+TasksMax=infinity
 ```
