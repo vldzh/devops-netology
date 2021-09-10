@@ -1,450 +1,265 @@
 
 
-1. Узнайте о sparse (разряженных) файлах.
+1.Работа c HTTP через телнет.
+Подключитесь утилитой телнет к сайту stackoverflow.com telnet stackoverflow.com 80
+отправьте HTTP запрос
+GET /questions HTTP/1.0
+HOST: stackoverflow.com
+[press enter]
+[press enter]
+В ответе укажите полученный HTTP код, что он означает?
 ```
-Разреженные – это специальные файлы, которые с большей эффективностью используют файловую систему, они не позволяют ФС занимать свободное дисковое пространство носителя, когда разделы не заполнены. То есть, «пустое место» будет задействовано только при необходимости. Пустая информация в виде нулей, будет хранится в блоке метаданных ФС. Поэтому, разреженные файлы изначально занимают меньший объем носителя, чем их реальный объем.
-
-Самым большим преимуществом разреженных файлов является то, что пользователь может создавать файлы большого размера, которые занимают очень мало места для хранения. Пространство для хранения выделяется автоматически по мере записи на него данных. Разреженные файлы большого объема создаются за относительно короткое время, поскольку файловой системе не требуется предварительно выделять дисковое пространство для записи нулей.
-
-Преимущества ограничены лишь приложениями, которые их поддерживают. Если у программы нет возможности распознавать или использовать их, то она сохранит их в исходном – несжатом состоянии, что не даст никаких преимуществ. Также с ними нужно быть осторожными, поскольку разреженный файл размером всего несколько мегабайт может внезапно увеличиться до нескольких гигабайт, когда неподдерживающие приложения скопируют его в место назначения.
+HTTP/1.1 301 Moved Permanently Код 301 означает, что запрос был перенаправлен на ресурс, указанный в заголовке location.Код 301 означает, что запрос был перенаправлен на ресурс, указанный в заголовке location.
 ```
-2. Могут ли файлы, являющиеся жесткой ссылкой на один объект, иметь разные права доступа и владельца? Почему?
+
 ```
-Нет, не могут. Это связанно с тем что прав данных находятся в метаданных исходного файла  идентичны для файлов, являющиxся жесткой ссылкой на один объект.
-```
-3. Сделайте vagrant destroy на имеющийся инстанс Ubuntu. Замените содержимое Vagrantfile следующим:
-```
-Vagrant.configure("2") do |config|
-  config.vm.box = "bento/ubuntu-20.04"
-  config.vm.provider :virtualbox do |vb|
-    lvm_experiments_disk0_path = "/tmp/lvm_experiments_disk0.vmdk"
-    lvm_experiments_disk1_path = "/tmp/lvm_experiments_disk1.vmdk"
-    vb.customize ['createmedium', '--filename', lvm_experiments_disk0_path, '--size', 2560]
-    vb.customize ['createmedium', '--filename', lvm_experiments_disk1_path, '--size', 2560]
-    vb.customize ['storageattach', :id, '--storagectl', 'SATA Controller', '--port', 1, '--device', 0, '--type', 'hdd', '--medium', lvm_experiments_disk0_path]
-    vb.customize ['storageattach', :id, '--storagectl', 'SATA Controller', '--port', 2, '--device', 0, '--type', 'hdd', '--medium', lvm_experiments_disk1_path]
-  end
-end
-Данная конфигурация создаст новую виртуальную машину с двумя дополнительными неразмеченными дисками по 2.5 Гб.
-```
-```
-c:\vagrant>vagrant destroy
-    default: Are you sure you want to destroy the 'default' VM? [y/N] y
-==> default: Destroying VM and associated drives...
+vagrant@vagrant:~$ telnet stackoverflow.com 80
+Trying 151.101.65.69...
+Connected to stackoverflow.com.
+Escape character is '^]'.
+GET /questions HTTP/1.0
+HOST: stackoverflow.com
 
-c:\vagrant>vagrant up
-Bringing machine 'default' up with 'virtualbox' provider...
-==> default: Importing base box 'bento/ubuntu-20.04'...
-==> default: Matching MAC address for NAT networking...
-==> default: Checking if box 'bento/ubuntu-20.04' version '202107.28.0' is up to date...
-==> default: Setting the name of the VM: vagrant_default_1629880597481_60349
-==> default: Clearing any previously set network interfaces...
-==> default: Preparing network interfaces based on configuration...
-    default: Adapter 1: nat
-==> default: Forwarding ports...
-    default: 22 (guest) => 2222 (host) (adapter 1)
-==> default: Running 'pre-boot' VM customizations...
-==> default: Booting VM...
-==> default: Waiting for machine to boot. This may take a few minutes...
-    default: SSH address: 127.0.0.1:2222
-    default: SSH username: vagrant
-    default: SSH auth method: private key
-Timed out while waiting for the machine to boot. This means that
-Vagrant was unable to communicate with the guest machine within
-the configured ("config.vm.boot_timeout" value) time period.
+HTTP/1.1 301 Moved Permanently
+cache-control: no-cache, no-store, must-revalidate
+location: https://stackoverflow.com/questions
+x-request-guid: 82e7a897-201f-4d2d-a01f-77c474e338c6
+feature-policy: microphone 'none'; speaker 'none'
+content-security-policy: upgrade-insecure-requests; frame-ancestors 'self' https://stackexchange.com
+Accept-Ranges: bytes
+Date: Thu, 09 Sep 2021 22:48:25 GMT
+Via: 1.1 varnish
+Connection: close
+X-Served-By: cache-fra19142-FRA
+X-Cache: MISS
+X-Cache-Hits: 0
+X-Timer: S1631227705.368554,VS0,VE92
+Vary: Fastly-SSL
+X-DNS-Prefetch-Control: off
+Set-Cookie: prov=9dea79c3-3163-0e1e-a610-0b8d923a97f3; domain=.stackoverflow.com; expires=Fri, 01-Jan-2055 00:00:00 GMT; path=/; HttpOnly
 
-If you look above, you should be able to see the error(s) that
-Vagrant had when attempting to connect to the machine. These errors
-are usually good hints as to what may be wrong.
-
-If you're using a custom box, make sure that networking is properly
-working and you're able to connect to the machine. It is a common
-problem that networking isn't setup properly in these boxes.
-Verify that authentication configurations are also setup properly,
-as well.
-
-If the box appears to be booting properly, you may want to increase
-the timeout ("config.vm.boot_timeout") value.
-
-
-c:\vagrant>vagrant ssh
-Welcome to Ubuntu 20.04.2 LTS (GNU/Linux 5.4.0-80-generic x86_64)
-
- * Documentation:  https://help.ubuntu.com
- * Management:     https://landscape.canonical.com
- * Support:        https://ubuntu.com/advantage
-
- System information disabled due to load higher than 2.0
-
-
-This system is built by the Bento project by Chef Software
-More information can be found at https://github.com/chef/bento
+Connection closed by foreign host.
 vagrant@vagrant:~$
 ```
 
-4. Используя fdisk, разбейте первый диск на 2 раздела: 2 Гб, оставшееся пространство.
+
+
+2.Повторите задание 1 в браузере, используя консоль разработчика F12.
+-откройте вкладку Network
+-отправьте запрос http://stackoverflow.com
+-найдите первый ответ HTTP сервера, откройте вкладку Headers
+-укажите в ответе полученный HTTP код.
+-проверьте время загрузки страницы, какой запрос обрабатывался дольше всего?
+-приложите скриншот консоли браузера в ответ.
+
+Первый ответ HTTP-сервера - 301 (Moved permanently). Дольше всего обрабатывался запрос https://stackoverflow.co
+Первый ответ сервера помлн редиректа:
+		
+		Request URL: https://stackoverflow.com/
+		Request Method: GET
+		Status Code: 200 
+		Remote Address: 151.101.1.69:443
+		Referrer Policy: strict-origin-when-cross-origin
+		accept-ranges: bytes
+		cache-control: private
+		content-encoding: gzip
+		content-security-policy: upgrade-insecure-requests; frame-ancestors 'self' https://stackexchange.com
+		content-type: text/html; charset=utf-8
+		date: Wed, 14 Jul 2021 05:47:44 GMT
+		feature-policy: microphone 'none'; speaker 'none'
+		strict-transport-security: max-age=15552000
+		vary: Accept-Encoding,Fastly-SSL
+		via: 1.1 varnish
+		x-cache: MISS
+		x-cache-hits: 0
+		x-dns-prefetch-control: off
+		x-frame-options: SAMEORIGIN
+		x-request-guid: bca8b6b2-2baf-4b4e-aaa5-05358a234141
+		x-served-by: cache-fra19144-FRA
+		x-timer: S1626241664.314861,VS0,VE96
+		:authority: stackoverflow.com
+		:method: GET
+		:path: /
+		:scheme: https
+		accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9
+		accept-encoding: gzip, deflate, br
+		accept-language: ru-RU,ru;q=0.9,en-US;q=0.8,en;q=0.7
+		cookie: prov=c7263ae4-cc89-5c1a-2981-66f87a515624
+		sec-ch-ua: " Not;A Brand";v="99", "Google Chrome";v="91", "Chromium";v="91"
+		sec-ch-ua-mobile: ?0
+		sec-fetch-dest: document
+		sec-fetch-mode: navigate
+		sec-fetch-site: none
+		sec-fetch-user: ?1
+		upgrade-insecure-requests: 1
+		user-agent: Mozilla/5.0 (Windows NT 6.3; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36
+
+
+![](f12.png)
+	
+
+3.Какой IP адрес у вас в интернете?
 ```
-vagrant@vagrant:~$ lsblk
-NAME                 MAJ:MIN RM  SIZE RO TYPE MOUNTPOINT
-sda                    8:0    0   64G  0 disk
-├─sda1                 8:1    0  512M  0 part /boot/efi
-├─sda2                 8:2    0    1K  0 part
-└─sda5                 8:5    0 63.5G  0 part
-  ├─vgvagrant-root   253:0    0 62.6G  0 lvm  /
-  └─vgvagrant-swap_1 253:1    0  980M  0 lvm  [SWAP]
-sdb                    8:16   0  2.5G  0 disk
-sdc                    8:32   0  2.5G  0 disk
-vagrant@vagrant:~$ sudo fdisk /dev/sdb
-
-Welcome to fdisk (util-linux 2.34).
-Changes will remain in memory only, until you decide to write them.
-Be careful before using the write command.
-
-Device does not contain a recognized partition table.
-Created a new DOS disklabel with disk identifier 0x3e726396.
-
-Command (m for help): n
-Partition type
-   p   primary (0 primary, 0 extended, 4 free)
-   e   extended (container for logical partitions)
-Select (default p): p
-Partition number (1-4, default 1): 1
-First sector (2048-5242879, default 2048):
-Last sector, +/-sectors or +/-size{K,M,G,T,P} (2048-5242879, default 5242879): +2G
-
-Created a new partition 1 of type 'Linux' and of size 2 GiB.
-
-Command (m for help): n
-Partition type
-   p   primary (1 primary, 0 extended, 3 free)
-   e   extended (container for logical partitions)
-Select (default p): p
-Partition number (2-4, default 2):
-First sector (4196352-5242879, default 4196352):
-Last sector, +/-sectors or +/-size{K,M,G,T,P} (4196352-5242879, default 5242879):
-
-Created a new partition 2 of type 'Linux' and of size 511 MiB.
-
-Command (m for help): w
-The partition table has been altered.
-Calling ioctl() to re-read partition table.
-Syncing disks.
-
-vagrant@vagrant:~$ lsblk
-NAME                 MAJ:MIN RM  SIZE RO TYPE MOUNTPOINT
-sda                    8:0    0   64G  0 disk
-├─sda1                 8:1    0  512M  0 part /boot/efi
-├─sda2                 8:2    0    1K  0 part
-└─sda5                 8:5    0 63.5G  0 part
-  ├─vgvagrant-root   253:0    0 62.6G  0 lvm  /
-  └─vgvagrant-swap_1 253:1    0  980M  0 lvm  [SWAP]
-sdb                    8:16   0  2.5G  0 disk
-├─sdb1                 8:17   0    2G  0 part
-└─sdb2                 8:18   0  511M  0 part
-sdc                    8:32   0  2.5G  0 disk
-```
-5. Используя sfdisk, перенесите данную таблицу разделов на второй диск.
-```
-vagrant@vagrant:~$ sudo sfdisk -d /dev/sdb > dump_part
-vagrant@vagrant:~$ sudo sfdisk /dev/sdc < dump_part
-Checking that no-one is using this disk right now ... OK
-
-Disk /dev/sdc: 2.51 GiB, 2684354560 bytes, 5242880 sectors
-Disk model: VBOX HARDDISK
-Units: sectors of 1 * 512 = 512 bytes
-Sector size (logical/physical): 512 bytes / 512 bytes
-I/O size (minimum/optimal): 512 bytes / 512 bytes
-
->>> Script header accepted.
->>> Script header accepted.
->>> Script header accepted.
->>> Script header accepted.
->>> Created a new DOS disklabel with disk identifier 0x3e726396.
-/dev/sdc1: Created a new partition 1 of type 'Linux' and of size 2 GiB.
-/dev/sdc2: Created a new partition 2 of type 'Linux' and of size 511 MiB.
-/dev/sdc3: Done.
-
-New situation:
-Disklabel type: dos
-Disk identifier: 0x3e726396
-
-Device     Boot   Start     End Sectors  Size Id Type
-/dev/sdc1          2048 4196351 4194304    2G 83 Linux
-/dev/sdc2       4196352 5242879 1046528  511M 83 Linux
-
-The partition table has been altered.
-Calling ioctl() to re-read partition table.
-Syncing disks.
-vagrant@vagrant:~$ lsblk
-NAME                 MAJ:MIN RM  SIZE RO TYPE MOUNTPOINT
-sda                    8:0    0   64G  0 disk
-├─sda1                 8:1    0  512M  0 part /boot/efi
-├─sda2                 8:2    0    1K  0 part
-└─sda5                 8:5    0 63.5G  0 part
-  ├─vgvagrant-root   253:0    0 62.6G  0 lvm  /
-  └─vgvagrant-swap_1 253:1    0  980M  0 lvm  [SWAP]
-sdb                    8:16   0  2.5G  0 disk
-├─sdb1                 8:17   0    2G  0 part
-└─sdb2                 8:18   0  511M  0 part
-sdc                    8:32   0  2.5G  0 disk
-├─sdc1                 8:33   0    2G  0 part
-└─sdc2                 8:34   0  511M  0 part
-```
-
-6. Соберите mdadm RAID1 на паре разделов 2 Гб.
-```
-vagrant@vagrant:~$ sudo mdadm --create --verbose /dev/md1 --level=1 --raid-devices=2 /dev/sdb1 /dev/sdc1
-mdadm: Note: this array has metadata at the start and
-    may not be suitable as a boot device.  If you plan to
-    store '/boot' on this device please ensure that
-    your boot-loader understands md/v1.x metadata, or use
-    --metadata=0.90
-mdadm: size set to 2094080K
-Continue creating array? y
-mdadm: Defaulting to version 1.2 metadata
-mdadm: array /dev/md1 started.
-vagrant@vagrant:~$ cat /proc/mdstat
-Personalities : [linear] [multipath] [raid0] [raid1] [raid6] [raid5] [raid4] [raid10]
-md1 : active raid1 sdc1[1] sdb1[0]
-      2094080 blocks super 1.2 [2/2] [UU]
-
-unused devices: <none>
-```
-
-7. Соберите mdadm RAID0 на второй паре маленьких разделов.
-```
-vagrant@vagrant:~$ sudo mdadm --create --verbose /dev/md2 --level=0 --raid-dev
-ices=2 /dev/sdb2 /dev/sdc2
-mdadm: chunk size defaults to 512K
-mdadm: Defaulting to version 1.2 metadata
-mdadm: array /dev/md2 started.
-vagrant@vagrant:~$ cat /proc/mdstat
-Personalities : [linear] [multipath] [raid0] [raid1] [raid6] [raid5] [raid4] [raid10]
-md2 : active raid0 sdc2[1] sdb2[0]
-      1042432 blocks super 1.2 512k chunks
-
-md1 : active raid1 sdc1[1] sdb1[0]
-      2094080 blocks super 1.2 [2/2] [UU]
-
-unused devices: <none>
-```
-
-8. Создайте 2 независимых PV на получившихся md-устройствах.
-```
-vagrant@vagrant:~$ sudo pvcreate /dev/md1
-  Physical volume "/dev/md1" successfully created.
-vagrant@vagrant:~$ sudo pvcreate /dev/md2
-  Physical volume "/dev/md2" successfully created.
-vagrant@vagrant:~$ sudo pvdisplay
-  --- Physical volume ---
-.........
-
-  "/dev/md1" is a new physical volume of "<2.00 GiB"
-  --- NEW Physical volume ---
-  PV Name               /dev/md1
-  VG Name
-  PV Size               <2.00 GiB
-  Allocatable           NO
-  PE Size               0
-  Total PE              0
-  Free PE               0
-  Allocated PE          0
-  PV UUID               D9rX01-CpgM-NXHF-rHXl-GFjt-ctuH-BRdBMW
-
-  "/dev/md2" is a new physical volume of "1018.00 MiB"
-  --- NEW Physical volume ---
-  PV Name               /dev/md2
-  VG Name
-  PV Size               1018.00 MiB
-  Allocatable           NO
-  PE Size               0
-  Total PE              0
-  Free PE               0
-  Allocated PE          0
-  PV UUID               w3ekgf-9k2d-u591-2rbX-rhco-6ktv-KIrkj8
-
-```
-
-9. Создайте общую volume-group на этих двух PV.
-```
-vagrant@vagrant:~$ sudo vgcreate vg00 /dev/md1 /dev/md2
-  Volume group "vg00" successfully created
-vagrant@vagrant:~$ sudo vgdisplay
-........
-  --- Volume group ---
-  VG Name               vg00
-  System ID
-  Format                lvm2
-  Metadata Areas        2
-  Metadata Sequence No  1
-  VG Access             read/write
-  VG Status             resizable
-  MAX LV                0
-  Cur LV                0
-  Open LV               0
-  Max PV                0
-  Cur PV                2
-  Act PV                2
-  VG Size               <2.99 GiB
-  PE Size               4.00 MiB
-  Total PE              765
-  Alloc PE / Size       0 / 0
-  Free  PE / Size       765 / <2.99 GiB
-  VG UUID               AsNmBu-WkZ9-c75Y-QnUE-ldra-shGv-UztPm8
-```
-
-10. Создайте LV размером 100 Мб, указав его расположение на PV с RAID0.
-```
-vagrant@vagrant:~$ sudo lvcreate --size 100M -n lv01 vg00 /dev/md2
-  Logical volume "lv01" created.
-vagrant@vagrant:~$ sudo lvdisplay
-  --- Logical volume ---
-.............
-
-  --- Logical volume ---
-  LV Path                /dev/vg00/lv01
-  LV Name                lv01
-  VG Name                vg00
-  LV UUID                4TZMOv-uegE-WYWn-o0yx-2IXP-8NoN-S9xT3S
-  LV Write Access        read/write
-  LV Creation host, time vagrant, 2021-08-26 21:29:28 +0000
-  LV Status              available
-  # open                 0
-  LV Size                100.00 MiB
-  Current LE             25
-  Segments               1
-  Allocation             inherit
-  Read ahead sectors     auto
-  - currently set to     4096
-  Block device           253:2
-
-```
-
-11. Создайте mkfs.ext4 ФС на получившемся LV.
-```
-vagrant@vagrant:~$ sudo mkfs.ext4 /dev/vg00/lv01
-mke2fs 1.45.5 (07-Jan-2020)
-Creating filesystem with 25600 4k blocks and 25600 inodes
-
-Allocating group tables: done
-Writing inode tables: done
-Creating journal (1024 blocks): done
-Writing superblocks and filesystem accounting information: done
-```
-
-12.Смонтируйте этот раздел в любую директорию, например, /tmp/new.
-```
-vagrant@vagrant:~$ sudo mount /dev/vg00/lv01 /tmp/new
-vagrant@vagrant:~$ mount
-............
-/dev/mapper/vg00-lv01 on /tmp/new type ext4 (rw,relatime,stripe=256)
-vagrant@vagrant:~$  df -h
-Filesystem                  Size  Used Avail Use% Mounted on
-..............
-/dev/mapper/vg00-lv01        93M   72K   86M   1% /tmp/new
-```
-
-13. Поместите туда тестовый файл, например wget https://mirror.yandex.ru/ubuntu/ls-lR.gz -O /tmp/new/test.gz.
-```
-vagrant@vagrant:~$ sudo wget https://mirror.yandex.ru/ubuntu/ls-lR.gz -O /tmp/new/test.gz
---2021-08-26 21:36:10--  https://mirror.yandex.ru/ubuntu/ls-lR.gz
-Resolving mirror.yandex.ru (mirror.yandex.ru)... 213.180.204.183, 2a02:6b8::183
-Connecting to mirror.yandex.ru (mirror.yandex.ru)|213.180.204.183|:443... connected.
-HTTP request sent, awaiting response... 200 OK
-Length: 20946369 (20M) [application/octet-stream]
-Saving to: ‘/tmp/new/test.gz’
-
-/tmp/new/test.gz                  100%[==========================================================>]  19.98M  17.2MB/s    in 1.2s
-
-2021-08-26 21:36:11 (17.2 MB/s) - ‘/tmp/new/test.gz’ saved [20946369/20946369]
-```
-
-14. Прикрепите вывод lsblk.
-```
-vagrant@vagrant:~$ lsblk
-NAME                 MAJ:MIN RM  SIZE RO TYPE  MOUNTPOINT
-sda                    8:0    0   64G  0 disk
-├─sda1                 8:1    0  512M  0 part  /boot/efi
-├─sda2                 8:2    0    1K  0 part
-└─sda5                 8:5    0 63.5G  0 part
-  ├─vgvagrant-root   253:0    0 62.6G  0 lvm   /
-  └─vgvagrant-swap_1 253:1    0  980M  0 lvm   [SWAP]
-sdb                    8:16   0  2.5G  0 disk
-├─sdb1                 8:17   0    2G  0 part
-│ └─md1                9:1    0    2G  0 raid1
-└─sdb2                 8:18   0  511M  0 part
-  └─md2                9:2    0 1018M  0 raid0
-    └─vg00-lv01      253:2    0  100M  0 lvm   /tmp/new
-sdc                    8:32   0  2.5G  0 disk
-├─sdc1                 8:33   0    2G  0 part
-│ └─md1                9:1    0    2G  0 raid1
-└─sdc2                 8:34   0  511M  0 part
-  └─md2                9:2    0 1018M  0 raid0
-    └─vg00-lv01      253:2    0  100M  0 lvm   /tmp/new
-```
-
-15. Протестируйте целостность файла:
-```
-root@vagrant:~# gzip -t /tmp/new/test.gz
-root@vagrant:~# echo $?
-0
+188.123.230.203
 ```
 ```
-vagrant@vagrant:~$ gzip -t /tmp/new/test.gz
-vagrant@vagrant:~$ echo $?
-0
+vagrant@vagrant:~$ dig -4 TXT +short o-o.myaddr.l.google.com @ns1.google.com
+"188.123.230.203"
+```
+4.Какому провайдеру принадлежит ваш IP адрес? Какой автономной системе AS? Воспользуйтесь утилитой whois
+
+```
+vagrant@vagrant:~$ whois 188.123.230.203 | grep descr
+descr:          public net for NAT CN01
+descr:          JSC "AKADO-Stolitsa"
+descr:          DOCSIS ISP, Moscow
+```
+```
+vagrant@vagrant:~$ whois 188.123.230.203 | grep origin
+origin:         AS15582
 ```
 
-16. Используя pvmove, переместите содержимое PV с RAID0 на RAID1.
+5.Через какие сети проходит пакет, отправленный с вашего компьютера на адрес 8.8.8.8? Через какие AS? Воспользуйтесь утилитой traceroute
 ```
-vagrant@vagrant:~$ sudo pvmove /dev/md2 /dev/md1
-  /dev/md2: Moved: 68.00%
-  /dev/md2: Moved: 100.00%
-vagrant@vagrant:~$ lsblk
-NAME                 MAJ:MIN RM  SIZE RO TYPE  MOUNTPOINT
-sda                    8:0    0   64G  0 disk
-├─sda1                 8:1    0  512M  0 part  /boot/efi
-├─sda2                 8:2    0    1K  0 part
-└─sda5                 8:5    0 63.5G  0 part
-  ├─vgvagrant-root   253:0    0 62.6G  0 lvm   /
-  └─vgvagrant-swap_1 253:1    0  980M  0 lvm   [SWAP]
-sdb                    8:16   0  2.5G  0 disk
-├─sdb1                 8:17   0    2G  0 part
-│ └─md1                9:1    0    2G  0 raid1
-│   └─vg00-lv01      253:2    0  100M  0 lvm   /tmp/new
-└─sdb2                 8:18   0  511M  0 part
-  └─md2                9:2    0 1018M  0 raid0
-sdc                    8:32   0  2.5G  0 disk
-├─sdc1                 8:33   0    2G  0 part
-│ └─md1                9:1    0    2G  0 raid1
-│   └─vg00-lv01      253:2    0  100M  0 lvm   /tmp/new
-└─sdc2                 8:34   0  511M  0 part
-  └─md2                9:2    0 1018M  0 raid0
+AS15582,AS8732,AS15169
+```
+```
+vagrant@vagrant:~$ whois AS15582 | grep org-name
+org-name:       OJSC Comcor
+vagrant@vagrant:~$ whois AS8732  | grep org-name
+org-name:       OJSC Comcor
+vagrant@vagrant:~$ whois AS15169 | grep OrgName 
+OrgName:        Google LLC
+```
+```
+vagrant@vagrant:~$ traceroute -IAn  8.8.8.8
+traceroute to 8.8.8.8 (8.8.8.8), 30 hops max, 60 byte packets
+ 1  10.0.2.2 [*]  0.341 ms  0.209 ms  0.198 ms
+ 2  192.168.245.1 [*]  1.451 ms  1.209 ms  0.974 ms
+ 3  192.168.77.1 [*]  2.993 ms  2.767 ms  2.489 ms
+ 4  172.23.32.1 [*]  6.561 ms  10.488 ms  10.258 ms
+ 5  10.244.4.70 [*]  17.674 ms  17.961 ms  18.186 ms
+ 6  188.123.255.46 [AS15582]  43.783 ms  10.254 ms  10.006 ms
+ 7  188.123.255.45 [AS15582]  7.956 ms  11.648 ms  11.380 ms
+ 8  62.117.100.21 [AS8732]  11.557 ms  10.643 ms  10.046 ms
+ 9  178.208.156.184 [AS8732]  9.779 ms  9.495 ms  11.153 ms
+10  172.253.68.11 [AS15169]  8.959 ms  12.119 ms  11.848 ms
+11  108.170.250.66 [AS15169]  12.270 ms  12.004 ms  8.766 ms
+12  209.85.255.136 [AS15169]  25.812 ms  25.583 ms *
+13  209.85.254.20 [AS15169]  27.826 ms  27.601 ms  28.007 ms
+14  172.253.51.241 [AS15169]  25.386 ms  24.946 ms  24.674 ms
+15  * * *
+16  * * *
+17  * * *
+18  * * *
+19  * * *
+20  * * *
+21  * * *
+22  * * *
+23  * * *
+24  * * *
+25  * * *
+26  8.8.8.8 [AS15169]  25.068 ms  28.336 ms  28.107 ms
 ```
 
-17. Сделайте --fail на устройство в вашем RAID1 md.
+6.Повторите задание 5 в утилите mtr. На каком участке наибольшая задержка - delay?
+
 ```
-vagrant@vagrant:~$ sudo mdadm /dev/md1 --fail /dev/sdb1
+хост, отвечающий с наибольшей задержкой - 5. 10.244.4.70, но это, скорее всего связано с медленной обработкой.
+участок с наибольшей задержкой - между  11. и 12. , где задержка составляет 11 ms
+11. AS15169  108.170.250.66       0.0%     1   13.2  13.2  13.2  13.2   0.0
+12. AS15169  209.85.255.136       0.0%     1   24.1  24.1  24.1  24.1   0.0
+```
+```
+vagrant@vagrant:~$ vagrant@vagrant:~$ mtr 8.8.8.8 -znrc 1
+Start: 2021-09-09T22:12:18+0000
+HOST: vagrant                     Loss%   Snt   Last   Avg  Best  Wrst StDev
+  1. AS???    10.0.2.2             0.0%     1    0.7   0.7   0.7   0.7   0.0
+  2. AS???    192.168.245.1        0.0%     1    1.6   1.6   1.6   1.6   0.0
+  3. AS???    192.168.77.1         0.0%     1    1.8   1.8   1.8   1.8   0.0
+  4. AS???    172.23.32.1          0.0%     1    7.9   7.9   7.9   7.9   0.0
+  5. AS???    10.244.4.70          0.0%     1  161.0 161.0 161.0 161.0   0.0
+  6. AS15582  188.123.255.46       0.0%     1   14.2  14.2  14.2  14.2   0.0
+  7. AS15582  188.123.255.45       0.0%     1    8.1   8.1   8.1   8.1   0.0
+  8. AS8732   62.117.100.21        0.0%     1    9.1   9.1   9.1   9.1   0.0
+  9. AS8732   178.208.156.184      0.0%     1    8.7   8.7   8.7   8.7   0.0
+ 10. AS15169  172.253.68.11        0.0%     1    9.5   9.5   9.5   9.5   0.0
+ 11. AS15169  108.170.250.66       0.0%     1   13.2  13.2  13.2  13.2   0.0
+ 12. AS15169  209.85.255.136       0.0%     1   24.1  24.1  24.1  24.1   0.0
+ 13. AS15169  209.85.254.20        0.0%     1   28.1  28.1  28.1  28.1   0.0
+ 14. AS15169  172.253.51.241       0.0%     1   24.6  24.6  24.6  24.6   0.0
+ 15. AS???    ???                 100.0     1    0.0   0.0   0.0   0.0   0.0
+ 16. AS???    ???                 100.0     1    0.0   0.0   0.0   0.0   0.0
+ 17. AS???    ???                 100.0     1    0.0   0.0   0.0   0.0   0.0
+ 18. AS???    ???                 100.0     1    0.0   0.0   0.0   0.0   0.0
+ 19. AS???    ???                 100.0     1    0.0   0.0   0.0   0.0   0.0
+ 20. AS???    ???                 100.0     1    0.0   0.0   0.0   0.0   0.0
+ 21. AS???    ???                 100.0     1    0.0   0.0   0.0   0.0   0.0
+ 22. AS???    ???                 100.0     1    0.0   0.0   0.0   0.0   0.0
+ 23. AS???    ???                 100.0     1    0.0   0.0   0.0   0.0   0.0
+ 24. AS???    ???                 100.0     1    0.0   0.0   0.0   0.0   0.0
+ 25. AS???    ???                 100.0     1    0.0   0.0   0.0   0.0   0.0
+ 26. AS15169  8.8.8.8              0.0%     1   25.5  25.5  25.5  25.5   0.0
 ```
 
-18. Подтвердите выводом dmesg, что RAID1 работает в деградированном состоянии.
+7.Какие DNS сервера отвечают за доменное имя dns.google? Какие A записи? воспользуйтесь утилитой dig
 ```
-[28927.767966] md/raid1:md1: Disk failure on sdb1, disabling device.
-               md/raid1:md1: Operation continuing on 1 devices.
+vagrant@vagrant:~$ dig +short NS dns.google
+ns3.zdns.google.
+ns1.zdns.google.
+ns4.zdns.google.
+ns2.zdns.google.
 ```
+```
+vagrant@vagrant:~$ dig +short A dns.google
+8.8.8.8
+8.8.4.4
+```
+9.Проверьте PTR записи для IP адресов из задания 7. Какое доменное имя привязано к IP? воспользуйтесь утилитой dig
+```
+8.8.4.4 dns.google
+8.8.8.8 dns.google
+```
+```
+vagrant@vagrant:~$ dig -x 8.8.8.8
 
-19. Протестируйте целостность файла, несмотря на "сбойный" диск он должен продолжать быть доступен:
-```
-root@vagrant:~# gzip -t /tmp/new/test.gz
-r
-oot@vagrant:~# echo $?
-0
-```
-```
-vagrant@vagrant:~$ gzip -t /tmp/new/test.gz
-vagrant@vagrant:~$ echo $?
-```
-20. Погасите тестовый хост, vagrant destroy.
-```
-vagrant destroy
+; <<>> DiG 9.16.1-Ubuntu <<>> -x 8.8.8.8
+;; global options: +cmd
+;; Got answer:
+;; ->>HEADER<<- opcode: QUERY, status: NOERROR, id: 40991
+;; flags: qr rd ra; QUERY: 1, ANSWER: 1, AUTHORITY: 0, ADDITIONAL: 1
+
+;; OPT PSEUDOSECTION:
+; EDNS: version: 0, flags:; udp: 65494
+;; QUESTION SECTION:
+;8.8.8.8.in-addr.arpa.          IN      PTR
+
+;; ANSWER SECTION:
+8.8.8.8.in-addr.arpa.   6991    IN      PTR     dns.google.
+
+;; Query time: 0 msec
+;; SERVER: 127.0.0.53#53(127.0.0.53)
+;; WHEN: Thu Sep 09 22:15:26 UTC 2021
+;; MSG SIZE  rcvd: 73
+
+vagrant@vagrant:~$ dig -x 8.8.4.4
+
+; <<>> DiG 9.16.1-Ubuntu <<>> -x 8.8.4.4
+;; global options: +cmd
+;; Got answer:
+;; ->>HEADER<<- opcode: QUERY, status: NOERROR, id: 50346
+;; flags: qr rd ra; QUERY: 1, ANSWER: 1, AUTHORITY: 0, ADDITIONAL: 1
+
+;; OPT PSEUDOSECTION:
+; EDNS: version: 0, flags:; udp: 65494
+;; QUESTION SECTION:
+;4.4.8.8.in-addr.arpa.          IN      PTR
+
+;; ANSWER SECTION:
+4.4.8.8.in-addr.arpa.   7155    IN      PTR     dns.google.
+
+;; Query time: 0 msec
+;; SERVER: 127.0.0.53#53(127.0.0.53)
+;; WHEN: Thu Sep 09 22:15:35 UTC 2021
+;; MSG SIZE  rcvd: 73
 ```
