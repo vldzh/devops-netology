@@ -51,21 +51,21 @@ done
 IP1 = 192.168.0.1
 IP2 = 173.194.222.113
 IP3 = 87.250.250.242
-for ((i=1; i<5; i++))
+for ((i=0; i<5; i++))
    do
-      curl -s  $IP1 > /dev/null
+      curl  -m1 -s  $IP1 > /dev/null
       if (($? == 0)); then
         echo $IP1 is up >> log
       else
         echo $IP1 is down >> log
       fi
-      curl -s  $IP2 > /dev/null
+      curl -m1 -s  $IP2 > /dev/null
       if (($? == 0)); then
         echo $IP2 is up >> log
       else
         echo $IP2 is down >> log
       fi
-      curl -s  $IP3 > /dev/null
+      curl -m -s  $IP3 > /dev/null
       if (($? == 0)); then
         echo $IP3 is up >> log
       else
@@ -73,40 +73,37 @@ for ((i=1; i<5; i++))
       fi
 done
 ```
-
-
+Доработанный скрипт
+```
+ips=(192.168.0.1 173.194.222.113 87.250.250.242)
+for IP in ${ips[@]}; do
+    for ((i=0; i<5; i++)) ; do
+        curl -m1 -s $IP &>1 >/dev/null
+        if (($? == 0)); then
+            echo $IP is up   >> ./log
+        elsecat ./log
+           echo $IP is down >> ./log
+        fi
+    done
+done
+```
 4.Необходимо дописать скрипт из предыдущего задания так, чтобы он выполнялся до тех пор, пока один из узлов не окажется недоступным. Если любой из узлов недоступен - IP этого узла пишется в файл error, скрипт прерывается
+
+Доработанный скрипт
 ```
-IP1 = 192.168.0.1
-IP2 = 173.194.222.113
-IP3 = 87.250.250.242
+ips=(192.168.0.1 173.194.222.113 87.250.250.242)
 while ((1==1)); do
-for ((i=1; i<5; i++))
-   do
-      curl -s  $IP1 > /dev/null
-      if (($? == 0)); then
-        echo $IP1 is up >> log
-      else
-        echo $IP1 is down >> log
-        echo $IP1 is down >> error
-        break 2
-      fi
-      curl -s  $IP2 > /dev/null
-      if (($? == 0)); then
-        echo $IP2 is up >> log
-      else
-        echo $IP2 is down >> log
-        echo $IP2 is down >> error\
-        break 2
-      fi
-      curl -s  $IP3 > /dev/null
-      if (($? == 0)); then
-        echo $IP3 is up >> log
-      else
-        echo $IP3 is down >> log
-        echo $IP3 is down >> error
-        break 2
-      fi
-done
+    for IP in ${ips[@]}; do
+        for ((i=0; i<5; i++)) ; do
+            curl -m1 -s  $IP >&1 > /dev/null
+            if (($? == 0)); then
+                echo $IP is up >> ./log
+            else
+                echo $IP is down >> ./log
+                echo $IP is down >> ./error
+            break 3
+            fi
+        done
+    done
 done
 ```
