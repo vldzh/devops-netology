@@ -141,3 +141,27 @@ latest: digest: sha256:60f51c1c3fd157c2f725ca32896d45c4df1de0c9e073e0b5c57cfa241
 * Подключитесь к первому контейнеру с помощью docker exec и создайте текстовый файл любого содержания в /data;
 * Добавьте еще один файл в папку /data на хостовой машине;
 * Подключитесь во второй контейнер и отобразите листинг и содержание файлов в /data контейнера.
+
+```
+librenms@librenms:~$ docker run --tty --detach --name deb --volume /data:/data debian
+d4668f16242beacafbd4a30cbeaf3349100fa44f15e61cd52d8202ff6eadf008
+librenms@librenms:~$ docker run --tty --detach --name cent --volume /data:/data centos
+940be95e86e45a6cedd5306aaac5d98cb590fb170c2b74c7528df8002d0ac461
+librenms@librenms:~$ docker exec -it cent bash
+[root@940be95e86e4 /]#  cd /data/
+[root@940be95e86e4 data]# ls -la
+total 8
+drwxr-xr-x 2 root root 4096 Nov 22 19:20 .
+drwxr-xr-x 1 root root 4096 Nov 22 19:27 ..
+[root@940be95e86e4 data]# touch centos.txt
+[root@940be95e86e4 data]# exit
+exit
+librenms@librenms:~$ touch /data/host.txt
+touch: cannot touch '/data/host.txt': Permission denied
+librenms@librenms:~$ sudo touch /data/host.txt
+librenms@librenms:~$ docker exec -it deb bash
+root@d4668f16242b:/# ls /data/
+centos.txt  host.txt
+root@d4668f16242b:/# exit
+exit
+```
