@@ -1,48 +1,57 @@
 Задача 1
-- Опишите своими словами основные преимущества применения на практике IaaC паттернов.
-- Какой из принципов IaaC является основополагающим?
+Дайте письменые ответы на следующие вопросы:
+
+- В чём отличие режимов работы сервисов в Docker Swarm кластере: replication и global?
+- Какой алгоритм выбора лидера используется в Docker Swarm кластере?
+- Что такое Overlay Network?
+
 ```
-- Опишите своими словами основные преимущества применения на практике IaaC паттернов.
+- В чём отличие режимов работы сервисов в Docker Swarm кластере: replication и global?
 
-Автоматизация, упрощение управлением конифгурацией, устранение дрифта конфигураций.
+В режиме global сервисы запускаются на всех хостаъ. В режиме replication -  только заданное количество экземпляров.
 
-- Какой из принципов IaaC является основополагающим?
+- Какой алгоритм выбора лидера используется в Docker Swarm кластере?
 
-Идемпотентность,  способность повторять один и тот же результат.
+Для выбора лидера в Docker Swarm кластере используется алгоритм для решения задач консенсуса Raft
+
+- Что такое Overlay Network?
+
+Overlay Network - искуственная сеть, которую могут использовать контейнеры в разных хостах swarm-кластера. Запускается "поверх" обычной сети  обычно с использованием технологии vxlan, которая инкапсулирует layer 2 фреймы в layer 4 пакеты (UDP/IP)
+
+
 ```
 
 Задача 2
-- Чем Ansible выгодно отличается от других систем управление конфигурациями?
-- Какой, на ваш взгляд, метод работы систем конфигурации более надёжный push или pull?
+Создать ваш первый Docker Swarm кластер в Яндекс.Облаке
 
+Для получения зачета, вам необходимо предоставить скриншот из терминала (консоли), с выводом команды:
+docker node ls
 ```
-- Чем Ansible выгодно отличается от других систем управление конфигурациями?
-Не требует для работы агента (работает по SSH), совместим с множеством технологий.
-- Какой, на ваш взгляд, метод работы систем конфигурации более надёжный push или pull?
-Pull кажется более надежным методом с точки зрения контроля над конфигурацией, 
-так как можно жестко контролировать время запроса обновления  обновлений конфигурации ,
-запрещать принимать изменения в конфигурации итд.
+[centos@node01 ~]$ sudo docker node ls
+ID                            HOSTNAME             STATUS    AVAILABILITY   MANAGER STATUS   ENGINE VERSION
+x8utu5gudrrroh2xinkk5akxw *   node01.netology.yc   Ready     Active         Leader           20.10.10
+tr3ee4uymlhfr2ayajx1979t2     node02.netology.yc   Ready     Active         Reachable        20.10.10
+31eh0t0pw8qtgvoemzlu5xncj     node03.netology.yc   Ready     Active         Reachable        20.10.10
+zlqmav4co43p5zz368a5dk4i4     node04.netology.yc   Ready     Active                          20.10.10
+v6hv0v0qw08waiusk50htrd3f     node05.netology.yc   Ready     Active                          20.10.10
+h0pdj042vysyutjd111gnkzm5     node06.netology.yc   Ready     Active                          20.10.10
 ```
-
 
 Задача 3
-Установить на личный компьютер:
+Создать ваш первый, готовый к боевой эксплуатации кластер мониторинга, состоящий из стека микросервисов.
 
- - VirtualBox
- - Vagrant
- - Ansible
-
-Приложить вывод команд установленных версий каждой из программ, оформленный в markdown.
-
+Для получения зачета, вам необходимо предоставить скриншот из терминала (консоли), с выводом команды:
+docker service ls
 
 ```
-vlad@vepc:~$ vboxmanage --version
-6.1.26_Ubuntur145957
-
-vlad@vepc:~$ vagrant --version
-Vagrant 2.2.6
-
-vlad@vepc:~$ ansible --version
-ansible [core 2.11.6]
-...
+[centos@node01 ~]$ sudo docker service ls
+ID             NAME                                MODE         REPLICAS   IMAGE                                          PORTS
+mv5fc6qupvsg   swarm_monitoring_alertmanager       replicated   1/1        stefanprodan/swarmprom-alertmanager:v0.14.0    
+0jr5nrzgfj74   swarm_monitoring_caddy              replicated   1/1        stefanprodan/caddy:latest                      *:3000->3000/tcp, *:9090->9090/tcp, *:9093-9094->9093-9094/tcp
+avoo37k30ck0   swarm_monitoring_cadvisor           global       6/6        google/cadvisor:latest                         
+2hvc4dj1bp1t   swarm_monitoring_dockerd-exporter   global       6/6        stefanprodan/caddy:latest                      
+04x3euomeobi   swarm_monitoring_grafana            replicated   1/1        stefanprodan/swarmprom-grafana:5.3.4           
+qr0jzwmtidsb   swarm_monitoring_node-exporter      global       6/6        stefanprodan/swarmprom-node-exporter:v0.16.0   
+rv6gyuiab3jc   swarm_monitoring_prometheus         replicated   1/1        stefanprodan/swarmprom-prometheus:v2.5.0       
+omqbo52pl4j7   swarm_monitoring_unsee              replicated   1/1        cloudflare/unsee:v0.8.0                        
 ```
