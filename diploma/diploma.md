@@ -29,10 +29,68 @@
 
 Для начала необходимо подготовить облачную инфраструктуру в ЯО при помощи [Terraform](https://www.terraform.io/).
 
-Особенности выполнения:
+1.Настроим провайдера
+vlad@ubuntu-test:~/netology/devops-netology/diploma/stage1$ cat main.tf
+terraform {
+  required_providers {
+    yandex = {
+      source = "yandex-cloud/yandex"
+    }
+  }
+  required_version = ">= 0.13"
+}
 
-- Бюджет купона ограничен, что следует иметь в виду при проектировании инфраструктуры и использовании ресурсов;
-Для облачного k8s используйте региональный мастер(неотказоустойчивый). Для self-hosted k8s минимизируйте ресурсы ВМ и долю ЦПУ. В обоих вариантах используйте прерываемые ВМ для worker nodes.
+provider "yandex" {
+  zone = "ru-central1-a"
+}
+
+2.Инициалищируем провайдера
+Выполним команду terraform init в папке с конфигурационным файлом .tf. Эта команда инициализирует провайдеров
+
+vlad@ubuntu-test:~/netology/devops-netology/diploma/stage1$ terraform init
+Initializing the backend...
+Initializing provider plugins...
+- Finding latest version of yandex-cloud/yandex...
+- Installing yandex-cloud/yandex v0.130.0...
+- Installed yandex-cloud/yandex v0.130.0 (unauthenticated)
+Terraform has created a lock file .terraform.lock.hcl to record the provider
+selections it made above. Include this file in your version control repository
+so that Terraform can guarantee to make the same selections by default when
+you run "terraform init" in the future.
+
+╷
+│ Warning: Incomplete lock file information for providers
+│
+│ Due to your customized provider installation methods, Terraform was forced
+│ to calculate lock file checksums locally for the following providers:
+│   - yandex-cloud/yandex
+│
+│ The current .terraform.lock.hcl file only includes checksums for
+│ linux_amd64, so Terraform running on another platform will fail to install
+│ these providers.
+│
+│ To calculate additional checksums for another platform, run:
+│   terraform providers lock -platform=linux_amd64
+│ (where linux_amd64 is the platform to generate)
+╵
+Terraform has been successfully initialized!
+
+You may now begin working with Terraform. Try running "terraform plan" to see
+any changes that are required for your infrastructure. All Terraform commands
+should now work.
+
+If you ever set or change modules or backend configuration for Terraform,
+rerun this command to reinitialize your working directory. If you forget, other
+commands will detect it and remind you to do so if necessary.
+vlad@ubuntu-test:~/netology/devops-netology/diploma/stage1$ ls -la
+total 20
+drwxrwxr-x 3 vlad vlad 4096 Oct 16 20:59 .
+drwxrwxr-x 4 vlad vlad 4096 Oct 16 20:55 ..
+-rw-rw-r-- 1 vlad vlad  178 Oct 16 20:59 main.tf
+drwxr-xr-x 3 vlad vlad 4096 Oct 16 20:59 .terraform
+-rw-r--r-- 1 vlad vlad  259 Oct 16 20:59 .terraform.lock.hcl
+
+
 
 Предварительная подготовка к установке и запуску Kubernetes кластера.
 
