@@ -29,7 +29,8 @@
 
 Для начала необходимо подготовить облачную инфраструктуру в ЯО при помощи [Terraform](https://www.terraform.io/).
 
-1.Настроим провайдера
+-Настроим провайдера
+```
 vlad@ubuntu-test:~/netology/devops-netology/diploma/stage1$ cat main.tf
 terraform {
   required_providers {
@@ -43,10 +44,10 @@ terraform {
 provider "yandex" {
   zone = "ru-central1-a"
 }
-
-2.Инициалищируем провайдера
+```
+-Инициализируем провайдера
 Выполним команду terraform init в папке с конфигурационным файлом .tf. Эта команда инициализирует провайдеров
-
+```
 vlad@ubuntu-test:~/netology/devops-netology/diploma/stage1$ terraform init
 Initializing the backend...
 Initializing provider plugins...
@@ -82,14 +83,7 @@ should now work.
 If you ever set or change modules or backend configuration for Terraform,
 rerun this command to reinitialize your working directory. If you forget, other
 commands will detect it and remind you to do so if necessary.
-vlad@ubuntu-test:~/netology/devops-netology/diploma/stage1$ ls -la
-total 20
-drwxrwxr-x 3 vlad vlad 4096 Oct 16 20:59 .
-drwxrwxr-x 4 vlad vlad 4096 Oct 16 20:55 ..
--rw-rw-r-- 1 vlad vlad  178 Oct 16 20:59 main.tf
-drwxr-xr-x 3 vlad vlad 4096 Oct 16 20:59 .terraform
--rw-r--r-- 1 vlad vlad  259 Oct 16 20:59 .terraform.lock.hcl
-
+```
 
 
 Предварительная подготовка к установке и запуску Kubernetes кластера.
