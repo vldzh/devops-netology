@@ -28,8 +28,9 @@
 ### Создание облачной инфраструктуры
 
 Для начала необходимо подготовить облачную инфраструктуру в ЯО при помощи [Terraform](https://www.terraform.io/).
+-узнаем ID облака:
 ```
-vlad@ubuntu-test:~/netology/devops-netology/diploma$ yc resource-manager cloud list
+vlad@ubuntu-test:~/netology$ yc resource-manager cloud list
 +----------------------+----------------+----------------------+--------+
 |          ID          |      NAME      |   ORGANIZATION ID    | LABELS |
 +----------------------+----------------+----------------------+--------+
@@ -37,9 +38,96 @@ vlad@ubuntu-test:~/netology/devops-netology/diploma$ yc resource-manager cloud l
 +----------------------+----------------+----------------------+--------+
 ```
 
--Настроим провайдера
 ```
-vlad@ubuntu-test:~/netology/devops-netology/diploma/stage1$ cat main.tf
+
+vlad@ubuntu-test:~/netology$ yc resource-manager --cloud-id  b1gnent42f5ngd6p9ko6 folder list
++----------------------+------------------+--------+--------+
+|          ID          |       NAME       | LABELS | STATUS |
++----------------------+------------------+--------+--------+
+| b1gl1l40scqu0fljs2gg | default          |        | ACTIVE |
+| b1g2ll8gqs3068utaas2 | netology-diploma |        | ACTIVE |
++----------------------+------------------+--------+--------+
+```
+
+```
+
+vlad@ubuntu-test:~/netology$ yc config set cloud-id b1gnent42f5ngd6p9ko6
+vlad@ubuntu-test:~/netology$ yc config set folder-id b1g2ll8gqs3068utaas2
+vlad@ubuntu-test:~/netology$ yc iam service-account create --name sa-tf
+done (1s)
+id: ajeh8dh1cnbk96cm3o13
+folder_id: b1g2ll8gqs3068utaas2
+created_at: "2024-10-19T14:50:06.550192570Z"
+name: sa-tf
+
+vlad@ubuntu-test:~/netology$ yc iam service-account list
++----------------------+-------+--------+---------------------+-----------------------+
+|          ID          | NAME  | LABELS |     CREATED AT      | LAST AUTHENTICATED AT |
++----------------------+-------+--------+---------------------+-----------------------+
+| ajeh8dh1cnbk96cm3o13 | sa-tf |        | 2024-10-19 14:50:06 |                       |
++----------------------+-------+--------+---------------------+-----------------------+
+```
+
+```
+vlad@ubuntu-test:~/netology$ yc resource-manager folder add-access-binding b1g2ll8gqs3068utaas2 \
+  --role editor  \
+  --subject serviceAccount:ajeh8dh1cnbk96cm3o13
+done (2s)
+effective_deltas:
+  - action: ADD
+    access_binding:
+      role_id: editor
+      subject:
+        id: ajeh8dh1cnbk96cm3o13
+        type: serviceAccount
+```
+
+```
+
+vlad@ubuntu-test:~/netology$ yc iam key create \
+  --service-account-id ajeh8dh1cnbk96cm3o13 \
+  --folder-name netology-diploma \
+  --output sa-tf-key.json
+id: ajer95hl2cer4uhlqffp
+service_account_id: ajeh8dh1cnbk96cm3o13
+created_at: "2024-10-19T15:04:16.945908005Z"
+key_algorithm: RSA_2048
+```
+
+```
+
+vlad@ubuntu-test:~/netology$ yc config profile create sa-tf-profile
+Profile 'sa-tf-profile' created and activated
+vlad@ubuntu-test:~/netology$ yc config set service-account-key sa-tf-key.json
+vlad@ubuntu-test:~/netology$ yc config set cloud-id b1gnent42f5ngd6p9ko6
+vlad@ubuntu-test:~/netology$ yc config set folder-id b1g2ll8gqs3068utaas2
+vlad@ubuntu-test:~/netology$ export YC_TOKEN=$(yc iam create-token)
+vlad@ubuntu-test:~/netology$ export YC_CLOUD_ID=$(yc config get cloud-id)
+vlad@ubuntu-test:~/netology$ export YC_FOLDER_ID=$(yc config get folder-id)
+```
+
+-Настроим Terraform
+```
+vlad@ubuntu-test:~/netology/devops-netology/diploma/step1$ mv ~/.terraformrc ~/.terraformrc.old
+vlad@ubuntu-test:~/netology/devops-netology/diploma/step1$ nano ~/.terraformrc
+vlad@ubuntu-test:~/netology/devops-netology/diploma/step1$ cat ~/.terraformrc
+provider_installation {
+  network_mirror {
+    url = "https://terraform-mirror.yandexcloud.net/"
+    include = ["registry.terraform.io/*/*"]
+  }
+  direct {
+    exclude = ["registry.terraform.io/*/*"]
+  }
+}
+
+```
+
+
+
+```
+vlad@ubuntu-test:~/netology/devops-netology/diploma/step1$ nano main.tf
+vlad@ubuntu-test:~/netology/devops-netology/diploma/step1$ cat main.tf
 terraform {
   required_providers {
     yandex = {
@@ -52,36 +140,17 @@ terraform {
 provider "yandex" {
   zone = "ru-central1-a"
 }
+
 ```
 -Инициализируем провайдера
 Выполним команду terraform init в папке с конфигурационным файлом .tf. Эта команда инициализирует провайдеров
 ```
-vlad@ubuntu-test:~/netology/devops-netology/diploma/stage1$ terraform init
+vlad@ubuntu-test:~/netology/devops-netology/diploma/step1$ terraform init
 Initializing the backend...
 Initializing provider plugins...
-- Finding latest version of yandex-cloud/yandex...
-- Installing yandex-cloud/yandex v0.130.0...
-- Installed yandex-cloud/yandex v0.130.0 (unauthenticated)
-Terraform has created a lock file .terraform.lock.hcl to record the provider
-selections it made above. Include this file in your version control repository
-so that Terraform can guarantee to make the same selections by default when
-you run "terraform init" in the future.
+- Reusing previous version of yandex-cloud/yandex from the dependency lock file
+- Using previously-installed yandex-cloud/yandex v0.130.0
 
-╷
-│ Warning: Incomplete lock file information for providers
-│
-│ Due to your customized provider installation methods, Terraform was forced
-│ to calculate lock file checksums locally for the following providers:
-│   - yandex-cloud/yandex
-│
-│ The current .terraform.lock.hcl file only includes checksums for
-│ linux_amd64, so Terraform running on another platform will fail to install
-│ these providers.
-│
-│ To calculate additional checksums for another platform, run:
-│   terraform providers lock -platform=linux_amd64
-│ (where linux_amd64 is the platform to generate)
-╵
 Terraform has been successfully initialized!
 
 You may now begin working with Terraform. Try running "terraform plan" to see
@@ -91,6 +160,7 @@ should now work.
 If you ever set or change modules or backend configuration for Terraform,
 rerun this command to reinitialize your working directory. If you forget, other
 commands will detect it and remind you to do so if necessary.
+
 ```
 
 

@@ -11,7 +11,3 @@ provider "yandex" {
   zone = "ru-central1-a"
 }
 
-resource "yandex_iam_service_account" "sa" {
-  name        = "sa1"
-  description = "service account 1"
-}
