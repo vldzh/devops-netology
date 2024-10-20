@@ -49,7 +49,7 @@ vlad@ubuntu-test:~/netology$ yc resource-manager --cloud-id  b1gnent42f5ngd6p9ko
 | b1g2ll8gqs3068utaas2 | netology-diploma |        | ACTIVE |
 +----------------------+------------------+--------+--------+
 ```
--создаем сервисный аккаунт для Terraform
+-создаем админский сервисный аккаунт 
 ```
 vlad@ubuntu-test:~/netology$ yc config set cloud-id b1gnent42f5ngd6p9ko6
 vlad@ubuntu-test:~/netology$ yc config set folder-id b1g2ll8gqs3068utaas2
@@ -85,11 +85,11 @@ effective_deltas:
         type: serviceAccount
 ```
 
-###1. Создайте сервисный аккаунт, который будет в дальнейшем использоваться Terraform для работы с инфраструктурой с необходимыми и достаточными правами. Не стоит использовать права суперпользователя
+### 1. Создайте сервисный аккаунт, который будет в дальнейшем использоваться Terraform для работы с инфраструктурой с необходимыми и достаточными правами. Не стоит использовать права суперпользователя
 Настроим  Terraform 
 
 ```
-vlad@ubuntu-test:~/netology/devops-netology/diploma/step1.1$ сфе  main.tf
+vlad@ubuntu-test:~/netology/devops-netology/diploma/step1.1$ cat  main.tf
 terraform {
   required_providers {
     yandex = {
