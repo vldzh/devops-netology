@@ -28,6 +28,8 @@
 ### Создание облачной инфраструктуры
 
 Для начала необходимо подготовить облачную инфраструктуру в ЯО при помощи [Terraform](https://www.terraform.io/).
+
+### Предварительная подготовка к установке и запуску Kubernetes кластера.
 -узнаем ID облака:
 ```
 vlad@ubuntu-test:~/netology$ yc resource-manager cloud list
@@ -37,9 +39,8 @@ vlad@ubuntu-test:~/netology$ yc resource-manager cloud list
 | b1gnent42f5ngd6p9ko6 | cloud-vladyezh | bpf2hhgetemutkk404bu |        |
 +----------------------+----------------+----------------------+--------+
 ```
-
+-узнаем ID папки:
 ```
-
 vlad@ubuntu-test:~/netology$ yc resource-manager --cloud-id  b1gnent42f5ngd6p9ko6 folder list
 +----------------------+------------------+--------+--------+
 |          ID          |       NAME       | LABELS | STATUS |
@@ -48,86 +49,47 @@ vlad@ubuntu-test:~/netology$ yc resource-manager --cloud-id  b1gnent42f5ngd6p9ko
 | b1g2ll8gqs3068utaas2 | netology-diploma |        | ACTIVE |
 +----------------------+------------------+--------+--------+
 ```
-
+-создаем сервисный аккаунт для Terraform
 ```
-
 vlad@ubuntu-test:~/netology$ yc config set cloud-id b1gnent42f5ngd6p9ko6
 vlad@ubuntu-test:~/netology$ yc config set folder-id b1g2ll8gqs3068utaas2
-vlad@ubuntu-test:~/netology$ yc iam service-account create --name sa-tf
+vlad@ubuntu-test:~/netology$ yc iam service-account create --name sa
 done (1s)
-id: ajeh8dh1cnbk96cm3o13
+id: ajehak8203gl8audi8o8
 folder_id: b1g2ll8gqs3068utaas2
-created_at: "2024-10-19T14:50:06.550192570Z"
-name: sa-tf
+created_at: "2024-10-20T20:44:02.198686809Z"
+name: sa
+
 
 vlad@ubuntu-test:~/netology$ yc iam service-account list
-+----------------------+-------+--------+---------------------+-----------------------+
-|          ID          | NAME  | LABELS |     CREATED AT      | LAST AUTHENTICATED AT |
-+----------------------+-------+--------+---------------------+-----------------------+
-| ajeh8dh1cnbk96cm3o13 | sa-tf |        | 2024-10-19 14:50:06 |                       |
-+----------------------+-------+--------+---------------------+-----------------------+
-```
+vlad@ubuntu-test:~/netology$ yc iam service-account list
++----------------------+--------------+--------+---------------------+-----------------------+
+|          ID          |     NAME     | LABELS |     CREATED AT      | LAST AUTHENTICATED AT |
++----------------------+--------------+--------+---------------------+-----------------------+
+| ajehak8203gl8audi8o8 | sa           |        | 2024-10-20 20:44:02 |                       |
++----------------------+--------------+--------+---------------------+-----------------------+
 
 ```
+-выдаем роль admin начальному сервисному аккаунту
+```
 vlad@ubuntu-test:~/netology$ yc resource-manager folder add-access-binding b1g2ll8gqs3068utaas2 \
-  --role editor  \
-  --subject serviceAccount:ajeh8dh1cnbk96cm3o13
-done (2s)
+  --role admin \
+  --subject serviceAccount:ajehak8203gl8audi8o8
+done (4s)
 effective_deltas:
   - action: ADD
     access_binding:
-      role_id: editor
+      role_id: admin
       subject:
-        id: ajeh8dh1cnbk96cm3o13
+        id: ajehak8203gl8audi8o8
         type: serviceAccount
 ```
 
-```
-
-vlad@ubuntu-test:~/netology$ yc iam key create \
-  --service-account-id ajeh8dh1cnbk96cm3o13 \
-  --folder-name netology-diploma \
-  --output sa-tf-key.json
-id: ajer95hl2cer4uhlqffp
-service_account_id: ajeh8dh1cnbk96cm3o13
-created_at: "2024-10-19T15:04:16.945908005Z"
-key_algorithm: RSA_2048
-```
+###1. Создайте сервисный аккаунт, который будет в дальнейшем использоваться Terraform для работы с инфраструктурой с необходимыми и достаточными правами. Не стоит использовать права суперпользователя
+Настроим  Terraform 
 
 ```
-
-vlad@ubuntu-test:~/netology$ yc config profile create sa-tf-profile
-Profile 'sa-tf-profile' created and activated
-vlad@ubuntu-test:~/netology$ yc config set service-account-key sa-tf-key.json
-vlad@ubuntu-test:~/netology$ yc config set cloud-id b1gnent42f5ngd6p9ko6
-vlad@ubuntu-test:~/netology$ yc config set folder-id b1g2ll8gqs3068utaas2
-vlad@ubuntu-test:~/netology$ export YC_TOKEN=$(yc iam create-token)
-vlad@ubuntu-test:~/netology$ export YC_CLOUD_ID=$(yc config get cloud-id)
-vlad@ubuntu-test:~/netology$ export YC_FOLDER_ID=$(yc config get folder-id)
-```
-
--Настроим Terraform
-```
-vlad@ubuntu-test:~/netology/devops-netology/diploma/step1$ mv ~/.terraformrc ~/.terraformrc.old
-vlad@ubuntu-test:~/netology/devops-netology/diploma/step1$ nano ~/.terraformrc
-vlad@ubuntu-test:~/netology/devops-netology/diploma/step1$ cat ~/.terraformrc
-provider_installation {
-  network_mirror {
-    url = "https://terraform-mirror.yandexcloud.net/"
-    include = ["registry.terraform.io/*/*"]
-  }
-  direct {
-    exclude = ["registry.terraform.io/*/*"]
-  }
-}
-
-```
-
-
-
-```
-vlad@ubuntu-test:~/netology/devops-netology/diploma/step1$ nano main.tf
-vlad@ubuntu-test:~/netology/devops-netology/diploma/step1$ cat main.tf
+vlad@ubuntu-test:~/netology/devops-netology/diploma/step1.1$ сфе  main.tf
 terraform {
   required_providers {
     yandex = {
@@ -138,47 +100,141 @@ terraform {
 }
 
 provider "yandex" {
+  service_account_key_file = "sa.json"
+  cloud_id  = "b1gnent42f5ngd6p9ko6"
+  folder_id = "b1g2ll8gqs3068utaas2"
   zone = "ru-central1-a"
 }
 
+// Create terraform SA
+resource "yandex_iam_service_account" "terraform-sa" {
+  folder_id = "b1g2ll8gqs3068utaas2"
+  name      = "terraform-sa"
+}
+
+// Grant permissions to terraform  sa
+resource "yandex_resourcemanager_folder_iam_member" "sa-editor" {
+  folder_id = "b1g2ll8gqs3068utaas2"
+  role      = "editor"
+  member    = "serviceAccount:${yandex_iam_service_account.terraform-sa.id}"
+}
+
+// Create Static Access Keys for terraform SA
+resource "yandex_iam_service_account_static_access_key" "sa-static-key" {
+  service_account_id = yandex_iam_service_account.terraform-sa.id
+  description        = "static access key for object storage"
+}
 ```
--Инициализируем провайдера
-Выполним команду terraform init в папке с конфигурационным файлом .tf. Эта команда инициализирует провайдеров
-```
-vlad@ubuntu-test:~/netology/devops-netology/diploma/step1$ terraform init
-Initializing the backend...
-Initializing provider plugins...
-- Reusing previous version of yandex-cloud/yandex from the dependency lock file
-- Using previously-installed yandex-cloud/yandex v0.130.0
-
-Terraform has been successfully initialized!
-
-You may now begin working with Terraform. Try running "terraform plan" to see
-any changes that are required for your infrastructure. All Terraform commands
-should now work.
-
-If you ever set or change modules or backend configuration for Terraform,
-rerun this command to reinitialize your working directory. If you forget, other
-commands will detect it and remind you to do so if necessary.
+Проверим и примерим Terraform 
 
 ```
+vlad@ubuntu-test:~/netology/devops-netology/diploma/step1.1$ terraform plan
+
+Terraform used the selected providers to generate the following execution plan. Resource actions are indicated with the following symbols:
+  + create
+
+Terraform will perform the following actions:
+
+  # yandex_iam_service_account.terraform-sa will be created
+  + resource "yandex_iam_service_account" "terraform-sa" {
+      + created_at = (known after apply)
+      + folder_id  = "b1g2ll8gqs3068utaas2"
+      + id         = (known after apply)
+      + name       = "terraform-sa"
+    }
+
+  # yandex_iam_service_account_static_access_key.sa-static-key will be created
+  + resource "yandex_iam_service_account_static_access_key" "sa-static-key" {
+      + access_key                   = (known after apply)
+      + created_at                   = (known after apply)
+      + description                  = "static access key for object storage"
+      + encrypted_secret_key         = (known after apply)
+      + id                           = (known after apply)
+      + key_fingerprint              = (known after apply)
+      + output_to_lockbox_version_id = (known after apply)
+      + secret_key                   = (sensitive value)
+      + service_account_id           = (known after apply)
+    }
+
+  # yandex_resourcemanager_folder_iam_member.sa-editor will be created
+  + resource "yandex_resourcemanager_folder_iam_member" "sa-editor" {
+      + folder_id = "b1g2ll8gqs3068utaas2"
+      + id        = (known after apply)
+      + member    = (known after apply)
+      + role      = "editor"
+    }
+
+Plan: 3 to add, 0 to change, 0 to destroy.
+
+───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+
+Note: You didn't use the -out option to save this plan, so Terraform can't guarantee to take exactly these actions if you run "terraform apply" now.
+vlad@ubuntu-test:~/netology/devops-netology/diploma/step1.1$ terraform apply
+
+Terraform used the selected providers to generate the following execution plan. Resource actions are indicated with the following symbols:
+  + create
+
+Terraform will perform the following actions:
+
+  # yandex_iam_service_account.terraform-sa will be created
+  + resource "yandex_iam_service_account" "terraform-sa" {
+      + created_at = (known after apply)
+      + folder_id  = "b1g2ll8gqs3068utaas2"
+      + id         = (known after apply)
+      + name       = "terraform-sa"
+    }
+
+  # yandex_iam_service_account_static_access_key.sa-static-key will be created
+  + resource "yandex_iam_service_account_static_access_key" "sa-static-key" {
+      + access_key                   = (known after apply)
+      + created_at                   = (known after apply)
+      + description                  = "static access key for object storage"
+      + encrypted_secret_key         = (known after apply)
+      + id                           = (known after apply)
+      + key_fingerprint              = (known after apply)
+      + output_to_lockbox_version_id = (known after apply)
+      + secret_key                   = (sensitive value)
+      + service_account_id           = (known after apply)
+    }
+
+  # yandex_resourcemanager_folder_iam_member.sa-editor will be created
+  + resource "yandex_resourcemanager_folder_iam_member" "sa-editor" {
+      + folder_id = "b1g2ll8gqs3068utaas2"
+      + id        = (known after apply)
+      + member    = (known after apply)
+      + role      = "editor"
+    }
+
+Plan: 3 to add, 0 to change, 0 to destroy.
+
+Do you want to perform these actions?
+  Terraform will perform the actions described above.
+  Only 'yes' will be accepted to approve.
+
+  Enter a value: yes
+
+yandex_iam_service_account.terraform-sa: Creating...
+yandex_iam_service_account.terraform-sa: Creation complete after 2s [id=ajepcjsrpd7u2c7bimoo]
+yandex_iam_service_account_static_access_key.sa-static-key: Creating...
+yandex_resourcemanager_folder_iam_member.sa-editor: Creating...
+yandex_iam_service_account_static_access_key.sa-static-key: Creation complete after 1s [id=ajefct603tjn47gq0442]
+yandex_resourcemanager_folder_iam_member.sa-editor: Creation complete after 3s [id=b1g2ll8gqs3068utaas2/editor/serviceAccount:ajepcjsrpd7u2c7bimoo]
+
+Apply complete! Resources: 3 added, 0 changed, 0 destroyed.
+```
 
 
-Предварительная подготовка к установке и запуску Kubernetes кластера.
-
-1. Создайте сервисный аккаунт, который будет в дальнейшем использоваться Terraform для работы с инфраструктурой с необходимыми и достаточными правами. Не стоит использовать права суперпользователя
-2. Подготовьте [backend](https://www.terraform.io/docs/language/settings/backends/index.html) для Terraform:  
+### 2. Подготовьте [backend](https://www.terraform.io/docs/language/settings/backends/index.html) для Terraform:  
    а. Рекомендуемый вариант: S3 bucket в созданном ЯО аккаунте(создание бакета через TF)
-   б. Альтернативный вариант:  [Terraform Cloud](https://app.terraform.io/)
+   
+
+
+
+
 3. Создайте конфигурацию Terrafrom, используя созданный бакет ранее как бекенд для хранения стейт файла. Конфигурации Terraform для создания сервисного аккаунта и бакета и основной инфраструктуры следует сохранить в разных папках.
 4. Создайте VPC с подсетями в разных зонах доступности.
 5. Убедитесь, что теперь вы можете выполнить команды `terraform destroy` и `terraform apply` без дополнительных ручных действий.
-6. В случае использования [Terraform Cloud](https://app.terraform.io/) в качестве [backend](https://www.terraform.io/docs/language/settings/backends/index.html) убедитесь, что применение изменений успешно проходит, используя web-интерфейс Terraform cloud.
 
-Ожидаемые результаты:
-
-1. Terraform сконфигурирован и создание инфраструктуры посредством Terraform возможно без дополнительных ручных действий, стейт основной конфигурации сохраняется в бакете или Terraform Cloud
-2. Полученная конфигурация инфраструктуры является предварительной, поэтому в ходе дальнейшего выполнения задания возможны изменения.
 
 ---
 ### Создание Kubernetes кластера
@@ -267,3 +323,6 @@ commands will detect it and remind you to do so if necessary.
 5. Репозиторий с конфигурацией Kubernetes кластера.
 6. Ссылка на тестовое приложение и веб интерфейс Grafana с данными доступа.
 7. Все репозитории рекомендуется хранить на одном ресурсе (github, gitlab)
+
+-------------------------------------
+

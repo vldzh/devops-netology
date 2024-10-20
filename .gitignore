@@ -1,19 +1,11 @@
+# Local .terraform directories and files
+**/.terraform/*
+.terraform*
+
+# .tfstate files
 *.tfstate
-*.tfstate.backup
-*.tfstate.lock.info
+*.tfstate.*
 
-# logs
-*.log
-
-# Directories
-.terraform/
-.vagrant/
-
-# SSH Keys
-*.pem
-
-# Backup files
-*.bak
-
-# Ignored Terraform files
-*gitignore*.tf
+# own secret vars store.
+personal.auto.tfvars
+*.tfvars
