@@ -124,11 +124,23 @@ resource "yandex_iam_service_account_static_access_key" "sa-static-key" {
   service_account_id = yandex_iam_service_account.terraform-sa.id
   description        = "static access key for object storage"
 }
+
+// Create bucket for next steps
+resource "yandex_storage_bucket" "netology-bucket" {
+  access_key = yandex_iam_service_account_static_access_key.sa-static-key.access_key
+  secret_key = yandex_iam_service_account_static_access_key.sa-static-key.secret_key
+  bucket     = "vladyezh-netology-bucket"
+  max_size = 1073741824 # 1 Gb
+  anonymous_access_flags {
+    read = true
+    list = false
+  }
+
 ```
 Проверим и примерим Terraform 
 
 ```
-vlad@ubuntu-test:~/netology/devops-netology/diploma/step1.1$ terraform plan
+vlad@ubuntu-test:~/netology/devops-netology/diploma/step1.1$ terraform   plan
 
 Terraform used the selected providers to generate the following execution plan. Resource actions are indicated with the following symbols:
   + create
@@ -164,12 +176,35 @@ Terraform will perform the following actions:
       + role      = "editor"
     }
 
-Plan: 3 to add, 0 to change, 0 to destroy.
+  # yandex_storage_bucket.netology-bucket will be created
+  + resource "yandex_storage_bucket" "netology-bucket" {
+      + access_key            = (known after apply)
+      + bucket                = "vladyezh-netology-bucket"
+      + bucket_domain_name    = (known after apply)
+      + default_storage_class = (known after apply)
+      + folder_id             = (known after apply)
+      + force_destroy         = false
+      + id                    = (known after apply)
+      + max_size              = 1073741824
+      + secret_key            = (sensitive value)
+      + website_domain        = (known after apply)
+      + website_endpoint      = (known after apply)
+
+      + anonymous_access_flags {
+          + list = false
+          + read = true
+        }
+
+      + versioning (known after apply)
+    }
+
+Plan: 4 to add, 0 to change, 0 to destroy.
 
 ───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
 
+
 Note: You didn't use the -out option to save this plan, so Terraform can't guarantee to take exactly these actions if you run "terraform apply" now.
-vlad@ubuntu-test:~/netology/devops-netology/diploma/step1.1$ terraform apply
+vlad@ubuntu-test:~/netology/devops-netology/diploma/step1.1$ terraform   apply
 
 Terraform used the selected providers to generate the following execution plan. Resource actions are indicated with the following symbols:
   + create
@@ -205,7 +240,29 @@ Terraform will perform the following actions:
       + role      = "editor"
     }
 
-Plan: 3 to add, 0 to change, 0 to destroy.
+  # yandex_storage_bucket.netology-bucket will be created
+  + resource "yandex_storage_bucket" "netology-bucket" {
+      + access_key            = (known after apply)
+      + bucket                = "vladyezh-netology-bucket"
+      + bucket_domain_name    = (known after apply)
+      + default_storage_class = (known after apply)
+      + folder_id             = (known after apply)
+      + force_destroy         = false
+      + id                    = (known after apply)
+      + max_size              = 1073741824
+      + secret_key            = (sensitive value)
+      + website_domain        = (known after apply)
+      + website_endpoint      = (known after apply)
+
+      + anonymous_access_flags {
+          + list = false
+          + read = true
+        }
+
+      + versioning (known after apply)
+    }
+
+Plan: 4 to add, 0 to change, 0 to destroy.
 
 Do you want to perform these actions?
   Terraform will perform the actions described above.
@@ -214,27 +271,469 @@ Do you want to perform these actions?
   Enter a value: yes
 
 yandex_iam_service_account.terraform-sa: Creating...
-yandex_iam_service_account.terraform-sa: Creation complete after 2s [id=ajepcjsrpd7u2c7bimoo]
-yandex_iam_service_account_static_access_key.sa-static-key: Creating...
+yandex_iam_service_account.terraform-sa: Creation complete after 2s [id=ajetu32q16an3facijht]
 yandex_resourcemanager_folder_iam_member.sa-editor: Creating...
-yandex_iam_service_account_static_access_key.sa-static-key: Creation complete after 1s [id=ajefct603tjn47gq0442]
-yandex_resourcemanager_folder_iam_member.sa-editor: Creation complete after 3s [id=b1g2ll8gqs3068utaas2/editor/serviceAccount:ajepcjsrpd7u2c7bimoo]
+yandex_iam_service_account_static_access_key.sa-static-key: Creating...
+yandex_iam_service_account_static_access_key.sa-static-key: Creation complete after 1s [id=ajei70ltes14tuc1r3kp]
+yandex_storage_bucket.netology-bucket: Creating...
+yandex_resourcemanager_folder_iam_member.sa-editor: Creation complete after 2s [id=b1g2ll8gqs3068utaas2/editor/serviceAccount:ajetu32q16an3facijht]
+yandex_storage_bucket.netology-bucket: Creation complete after 6s [id=vladyezh-netology-bucket]
 
-Apply complete! Resources: 3 added, 0 changed, 0 destroyed.
+Apply complete! Resources: 4 added, 0 changed, 0 destroyed.
 ```
 
 
-### 2. Подготовьте [backend](https://www.terraform.io/docs/language/settings/backends/index.html) для Terraform:  
-   а. Рекомендуемый вариант: S3 bucket в созданном ЯО аккаунте(создание бакета через TF)
-   
+### 2. Подготовьте [backend](https://www.terraform.io/docs/language/settings/backends/index.html) для Terraform:  а. Рекомендуемый вариант: S3 bucket в созданном ЯО аккаунте(создание бакета через TF)
 
 
-
+-Создадим авторизованный ключ для сервисного аккаунта terrafofm-sa и сохраним его в файл 
+```
+vlad@ubuntu-test:~/netology/devops-netology/diploma/step1.2$ yc iam key create --service-account-name terraform-sa --output terraform-sa.json
+id: ajetp72t59ku3cfq23ig
+service_account_id: ajetu32q16an3facijht
+created_at: "2024-10-22T19:33:03.144146332Z"
+key_algorithm: RSA_2048
+```
+-Удалим начальный админисуий экуцнт м убудимся , что остался  только  terraform-sa
+```
+vlad@ubuntu-test:~/netology/devops-netology/diploma/step1.2$ yc iam service-account list
++----------------------+--------------+--------+---------------------+-----------------------+
+|          ID          |     NAME     | LABELS |     CREATED AT      | LAST AUTHENTICATED AT |
++----------------------+--------------+--------+---------------------+-----------------------+
+| ajetu32q16an3facijht | terraform-sa |        | 2024-10-22 19:08:28 | 2024-10-22 00:00:00   |
++----------------------+--------------+--------+---------------------+-----------------------+
+```
+Для  вутентфикации доступа к S3, настроим переменные окружения:
+```
+vlad@ubuntu-test:~/netology/devops-netology/diploma/step1.2$ yc iam access-key create --folder-id b1g2ll8gqs3068utaas2  --service-account-name terraform-sa
+access_key:
+  id: ajeia5lpm2c651isfd4v
+  service_account_id: ajetu32q16an3facijht
+  created_at: "2024-10-22T20:16:30.649011119Z"
+  key_id: XXXXXXXXXXXXXXXXXXXXXXXXXX
+  secret: YYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYY
+vlad@ubuntu-test:~/netology/devops-netology/diploma/step1.2$ export AWS_ACCESS_KEY_ID="XXXXXXXXXXXXXXXXXXXXXXXXXXX"
+vlad@ubuntu-test:~/netology/devops-netology/diploma/step1.2$ export AWS_SECRET_ACCESS_KEY="YYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYY"
+```
 
 3. Создайте конфигурацию Terrafrom, используя созданный бакет ранее как бекенд для хранения стейт файла. Конфигурации Terraform для создания сервисного аккаунта и бакета и основной инфраструктуры следует сохранить в разных папках.
 4. Создайте VPC с подсетями в разных зонах доступности.
 5. Убедитесь, что теперь вы можете выполнить команды `terraform destroy` и `terraform apply` без дополнительных ручных действий.
 
+-создаем конфигурацию Terrafrom
+
+```
+vlad@ubuntu-test:~/netology/devops-netology/diploma/step1.2$ cat main.tf
+terraform {
+  required_providers {
+    yandex = {
+      source = "yandex-cloud/yandex"
+    }
+  }
+  required_version = ">= 0.13"
+
+
+  backend "s3" {
+    endpoints = {
+      s3 = "https://storage.yandexcloud.net"
+    }
+    bucket = "vladyezh-netology-bucket"
+    region = "ru-central1"
+    key    = "diploma.tfstate"
+
+    skip_region_validation      = true
+    skip_credentials_validation = true
+    skip_requesting_account_id  = true # Необходимая опция Terraform для версии 1.6.1 и старше.
+    skip_s3_checksum            = true # Необходимая опция при описании бэкенда для Terraform версии 1.6.3 и старше.
+
+
+  }
+}
+
+
+provider "yandex" {
+  service_account_key_file = "terraform-sa.json"
+  cloud_id  = "b1gnent42f5ngd6p9ko6"
+  folder_id = "b1g2ll8gqs3068utaas2"
+  zone = "ru-central1-a"
+}
+
+
+# Network
+resource "yandex_vpc_network" "network-1" {
+  name = "network"
+}
+
+resource "yandex_vpc_subnet" "subnet-1" {
+  name           = "subnet1"
+  zone           = "ru-central1-a"
+  network_id     = yandex_vpc_network.network-1.id
+  v4_cidr_blocks = ["192.168.10.0/24"]
+}
+
+resource "yandex_vpc_subnet" "subnet-2" {
+  name           = "subnet2"
+  zone           = "ru-central1-a"
+  network_id     = yandex_vpc_network.network-1.id
+  v4_cidr_blocks = ["192.168.20.0/24"]
+}
+
+resource "yandex_vpc_subnet" "subnet-3" {
+  name           = "subnet3"
+  zone           = "ru-central1-a"
+  network_id     = yandex_vpc_network.network-1.id
+  v4_cidr_blocks = ["192.168.30.0/24"]
+}
+
+```
+
+```
+vlad@ubuntu-test:~/netology/devops-netology/diploma/step1.2$ terraform init
+Initializing the backend...
+Initializing provider plugins...
+- Reusing previous version of yandex-cloud/yandex from the dependency lock file
+- Using previously-installed yandex-cloud/yandex v0.131.0
+
+Terraform has been successfully initialized!
+
+You may now begin working with Terraform. Try running "terraform plan" to see
+any changes that are required for your infrastructure. All Terraform commands
+should now work.
+
+If you ever set or change modules or backend configuration for Terraform,
+rerun this command to reinitialize your working directory. If you forget, other
+commands will detect it and remind you to do so if necessary.
+vlad@ubuntu-test:~/netology/devops-netology/diploma/step1.2$ terraform  validate
+Success! The configuration is valid.
+
+vlad@ubuntu-test:~/netology/devops-netology/diploma/step1.2$ terraform   plan
+
+Terraform used the selected providers to generate the following execution plan. Resource actions are indicated with the following symbols:
+  + create
+
+Terraform will perform the following actions:
+
+  # yandex_vpc_network.network-1 will be created
+  + resource "yandex_vpc_network" "network-1" {
+      + created_at                = (known after apply)
+      + default_security_group_id = (known after apply)
+      + folder_id                 = (known after apply)
+      + id                        = (known after apply)
+      + labels                    = (known after apply)
+      + name                      = "network"
+      + subnet_ids                = (known after apply)
+    }
+
+  # yandex_vpc_subnet.subnet-1 will be created
+  + resource "yandex_vpc_subnet" "subnet-1" {
+      + created_at     = (known after apply)
+      + folder_id      = (known after apply)
+      + id             = (known after apply)
+      + labels         = (known after apply)
+      + name           = "subnet1"
+      + network_id     = (known after apply)
+      + v4_cidr_blocks = [
+          + "192.168.10.0/24",
+        ]
+      + v6_cidr_blocks = (known after apply)
+      + zone           = "ru-central1-a"
+    }
+
+  # yandex_vpc_subnet.subnet-2 will be created
+  + resource "yandex_vpc_subnet" "subnet-2" {
+      + created_at     = (known after apply)
+      + folder_id      = (known after apply)
+      + id             = (known after apply)
+      + labels         = (known after apply)
+      + name           = "subnet2"
+      + network_id     = (known after apply)
+      + v4_cidr_blocks = [
+          + "192.168.20.0/24",
+        ]
+      + v6_cidr_blocks = (known after apply)
+      + zone           = "ru-central1-a"
+    }
+
+  # yandex_vpc_subnet.subnet-3 will be created
+  + resource "yandex_vpc_subnet" "subnet-3" {
+      + created_at     = (known after apply)
+      + folder_id      = (known after apply)
+      + id             = (known after apply)
+      + labels         = (known after apply)
+      + name           = "subnet3"
+      + network_id     = (known after apply)
+      + v4_cidr_blocks = [
+          + "192.168.30.0/24",
+        ]
+      + v6_cidr_blocks = (known after apply)
+      + zone           = "ru-central1-a"
+    }
+
+Plan: 4 to add, 0 to change, 0 to destroy.
+
+───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+
+Note: You didn't use the -out option to save this plan, so Terraform can't guarantee to take exactly these actions if you run "terraform apply" now.
+vlad@ubuntu-test:~/netology/devops-netology/diploma/step1.2$ terraform apply
+
+Terraform used the selected providers to generate the following execution plan. Resource actions are indicated with the following symbols:
+  + create
+
+Terraform will perform the following actions:
+
+  # yandex_vpc_network.network-1 will be created
+  + resource "yandex_vpc_network" "network-1" {
+      + created_at                = (known after apply)
+      + default_security_group_id = (known after apply)
+      + folder_id                 = (known after apply)
+      + id                        = (known after apply)
+      + labels                    = (known after apply)
+      + name                      = "network"
+      + subnet_ids                = (known after apply)
+    }
+
+  # yandex_vpc_subnet.subnet-1 will be created
+  + resource "yandex_vpc_subnet" "subnet-1" {
+      + created_at     = (known after apply)
+      + folder_id      = (known after apply)
+      + id             = (known after apply)
+      + labels         = (known after apply)
+      + name           = "subnet1"
+      + network_id     = (known after apply)
+      + v4_cidr_blocks = [
+          + "192.168.10.0/24",
+        ]
+      + v6_cidr_blocks = (known after apply)
+      + zone           = "ru-central1-a"
+    }
+
+  # yandex_vpc_subnet.subnet-2 will be created
+  + resource "yandex_vpc_subnet" "subnet-2" {
+      + created_at     = (known after apply)
+      + folder_id      = (known after apply)
+      + id             = (known after apply)
+      + labels         = (known after apply)
+      + name           = "subnet2"
+      + network_id     = (known after apply)
+      + v4_cidr_blocks = [
+          + "192.168.20.0/24",
+        ]
+      + v6_cidr_blocks = (known after apply)
+      + zone           = "ru-central1-a"
+    }
+
+  # yandex_vpc_subnet.subnet-3 will be created
+  + resource "yandex_vpc_subnet" "subnet-3" {
+      + created_at     = (known after apply)
+      + folder_id      = (known after apply)
+      + id             = (known after apply)
+      + labels         = (known after apply)
+      + name           = "subnet3"
+      + network_id     = (known after apply)
+      + v4_cidr_blocks = [
+          + "192.168.30.0/24",
+        ]
+      + v6_cidr_blocks = (known after apply)
+      + zone           = "ru-central1-a"
+    }
+
+Plan: 4 to add, 0 to change, 0 to destroy.
+
+Do you want to perform these actions?
+  Terraform will perform the actions described above.
+  Only 'yes' will be accepted to approve.
+
+  Enter a value: yes
+
+yandex_vpc_network.network-1: Creating...
+yandex_vpc_network.network-1: Creation complete after 1s [id=enp7n8jr64esenuoij86]
+yandex_vpc_subnet.subnet-3: Creating...
+yandex_vpc_subnet.subnet-2: Creating...
+yandex_vpc_subnet.subnet-1: Creating...
+yandex_vpc_subnet.subnet-2: Creation complete after 1s [id=e9b0frt8nor9bu2t407b]
+yandex_vpc_subnet.subnet-3: Creation complete after 1s [id=e9b9bktmc7p7fofib71q]
+yandex_vpc_subnet.subnet-1: Creation complete after 2s [id=e9bct0v16jlbn0i6huhp]
+
+Apply complete! Resources: 4 added, 0 changed, 0 destroyed.
+```
+-Проверим удаление и создание 
+```
+vlad@ubuntu-test:~/netology/devops-netology/diploma/step1.2$ terraform destroy
+yandex_vpc_network.network-1: Refreshing state... [id=enp7n8jr64esenuoij86]
+yandex_vpc_subnet.subnet-3: Refreshing state... [id=e9b9bktmc7p7fofib71q]
+yandex_vpc_subnet.subnet-2: Refreshing state... [id=e9b0frt8nor9bu2t407b]
+yandex_vpc_subnet.subnet-1: Refreshing state... [id=e9bct0v16jlbn0i6huhp]
+
+Terraform used the selected providers to generate the following execution plan. Resource actions are indicated with the following symbols:
+  - destroy
+
+Terraform will perform the following actions:
+
+  # yandex_vpc_network.network-1 will be destroyed
+  - resource "yandex_vpc_network" "network-1" {
+      - created_at                = "2024-10-22T20:27:22Z" -> null
+      - default_security_group_id = "enp3qpldnaano2tkjetp" -> null
+      - folder_id                 = "b1g2ll8gqs3068utaas2" -> null
+      - id                        = "enp7n8jr64esenuoij86" -> null
+      - labels                    = {} -> null
+      - name                      = "network" -> null
+      - subnet_ids                = [
+          - "e9b0frt8nor9bu2t407b",
+          - "e9b9bktmc7p7fofib71q",
+          - "e9bct0v16jlbn0i6huhp",
+        ] -> null
+        # (1 unchanged attribute hidden)
+    }
+
+  # yandex_vpc_subnet.subnet-1 will be destroyed
+  - resource "yandex_vpc_subnet" "subnet-1" {
+      - created_at     = "2024-10-22T20:27:25Z" -> null
+      - folder_id      = "b1g2ll8gqs3068utaas2" -> null
+      - id             = "e9bct0v16jlbn0i6huhp" -> null
+      - labels         = {} -> null
+      - name           = "subnet1" -> null
+      - network_id     = "enp7n8jr64esenuoij86" -> null
+      - v4_cidr_blocks = [
+          - "192.168.10.0/24",
+        ] -> null
+      - v6_cidr_blocks = [] -> null
+      - zone           = "ru-central1-a" -> null
+        # (2 unchanged attributes hidden)
+    }
+
+  # yandex_vpc_subnet.subnet-2 will be destroyed
+  - resource "yandex_vpc_subnet" "subnet-2" {
+      - created_at     = "2024-10-22T20:27:24Z" -> null
+      - folder_id      = "b1g2ll8gqs3068utaas2" -> null
+      - id             = "e9b0frt8nor9bu2t407b" -> null
+      - labels         = {} -> null
+      - name           = "subnet2" -> null
+      - network_id     = "enp7n8jr64esenuoij86" -> null
+      - v4_cidr_blocks = [
+          - "192.168.20.0/24",
+        ] -> null
+      - v6_cidr_blocks = [] -> null
+      - zone           = "ru-central1-a" -> null
+        # (2 unchanged attributes hidden)
+    }
+
+  # yandex_vpc_subnet.subnet-3 will be destroyed
+  - resource "yandex_vpc_subnet" "subnet-3" {
+      - created_at     = "2024-10-22T20:27:24Z" -> null
+      - folder_id      = "b1g2ll8gqs3068utaas2" -> null
+      - id             = "e9b9bktmc7p7fofib71q" -> null
+      - labels         = {} -> null
+      - name           = "subnet3" -> null
+      - network_id     = "enp7n8jr64esenuoij86" -> null
+      - v4_cidr_blocks = [
+          - "192.168.30.0/24",
+        ] -> null
+      - v6_cidr_blocks = [] -> null
+      - zone           = "ru-central1-a" -> null
+        # (2 unchanged attributes hidden)
+    }
+
+Plan: 0 to add, 0 to change, 4 to destroy.
+
+Do you really want to destroy all resources?
+  Terraform will destroy all your managed infrastructure, as shown above.
+  There is no undo. Only 'yes' will be accepted to confirm.
+
+  Enter a value: yes
+
+yandex_vpc_subnet.subnet-1: Destroying... [id=e9bct0v16jlbn0i6huhp]
+yandex_vpc_subnet.subnet-3: Destroying... [id=e9b9bktmc7p7fofib71q]
+yandex_vpc_subnet.subnet-2: Destroying... [id=e9b0frt8nor9bu2t407b]
+yandex_vpc_subnet.subnet-3: Destruction complete after 0s
+yandex_vpc_subnet.subnet-1: Destruction complete after 0s
+yandex_vpc_subnet.subnet-2: Destruction complete after 1s
+yandex_vpc_network.network-1: Destroying... [id=enp7n8jr64esenuoij86]
+yandex_vpc_network.network-1: Destruction complete after 0s
+
+Destroy complete! Resources: 4 destroyed.
+vlad@ubuntu-test:~/netology/devops-netology/diploma/step1.2$ terraform apply
+
+Terraform used the selected providers to generate the following execution plan. Resource actions are indicated with the following symbols:
+  + create
+
+Terraform will perform the following actions:
+
+  # yandex_vpc_network.network-1 will be created
+  + resource "yandex_vpc_network" "network-1" {
+      + created_at                = (known after apply)
+      + default_security_group_id = (known after apply)
+      + folder_id                 = (known after apply)
+      + id                        = (known after apply)
+      + labels                    = (known after apply)
+      + name                      = "network"
+      + subnet_ids                = (known after apply)
+    }
+
+  # yandex_vpc_subnet.subnet-1 will be created
+  + resource "yandex_vpc_subnet" "subnet-1" {
+      + created_at     = (known after apply)
+      + folder_id      = (known after apply)
+      + id             = (known after apply)
+      + labels         = (known after apply)
+      + name           = "subnet1"
+      + network_id     = (known after apply)
+      + v4_cidr_blocks = [
+          + "192.168.10.0/24",
+        ]
+      + v6_cidr_blocks = (known after apply)
+      + zone           = "ru-central1-a"
+    }
+
+  # yandex_vpc_subnet.subnet-2 will be created
+  + resource "yandex_vpc_subnet" "subnet-2" {
+      + created_at     = (known after apply)
+      + folder_id      = (known after apply)
+      + id             = (known after apply)
+      + labels         = (known after apply)
+      + name           = "subnet2"
+      + network_id     = (known after apply)
+      + v4_cidr_blocks = [
+          + "192.168.20.0/24",
+        ]
+      + v6_cidr_blocks = (known after apply)
+      + zone           = "ru-central1-a"
+    }
+
+  # yandex_vpc_subnet.subnet-3 will be created
+  + resource "yandex_vpc_subnet" "subnet-3" {
+      + created_at     = (known after apply)
+      + folder_id      = (known after apply)
+      + id             = (known after apply)
+      + labels         = (known after apply)
+      + name           = "subnet3"
+      + network_id     = (known after apply)
+      + v4_cidr_blocks = [
+          + "192.168.30.0/24",
+        ]
+      + v6_cidr_blocks = (known after apply)
+      + zone           = "ru-central1-a"
+    }
+
+Plan: 4 to add, 0 to change, 0 to destroy.
+
+Do you want to perform these actions?
+  Terraform will perform the actions described above.
+  Only 'yes' will be accepted to approve.
+
+  Enter a value: yes
+
+yandex_vpc_network.network-1: Creating...
+yandex_vpc_network.network-1: Creation complete after 1s [id=enpngs02hlnuemgvtih0]
+yandex_vpc_subnet.subnet-2: Creating...
+yandex_vpc_subnet.subnet-3: Creating...
+yandex_vpc_subnet.subnet-1: Creating...
+yandex_vpc_subnet.subnet-3: Creation complete after 1s [id=e9b0lak66afk0rmomr53]
+yandex_vpc_subnet.subnet-1: Creation complete after 1s [id=e9bgumet80m7bvddiusq]
+yandex_vpc_subnet.subnet-2: Creation complete after 2s [id=e9b87r3mhikk55ah4h9k]
+
+Apply complete! Resources: 4 added, 0 changed, 0 destroyed.
+
+```
 
 ---
 ### Создание Kubernetes кластера

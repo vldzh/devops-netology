@@ -32,3 +32,15 @@ resource "yandex_iam_service_account_static_access_key" "sa-static-key" {
   service_account_id = yandex_iam_service_account.terraform-sa.id
   description        = "static access key for object storage"
 }
+
+// Create bucket fro next steps
+resource "yandex_storage_bucket" "netology-bucket" {
+  access_key = yandex_iam_service_account_static_access_key.sa-static-key.access_key
+  secret_key = yandex_iam_service_account_static_access_key.sa-static-key.secret_key
+  bucket     = "vladyezh-netology-bucket"
+  max_size = 1073741824 # 1 Gb
+  anonymous_access_flags {
+    read = true
+    list = false
+  }
+}
